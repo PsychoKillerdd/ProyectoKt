@@ -11,15 +11,32 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ProyectoTitulo">
+
+        <!-- LoginActivity is now the starting point of the app -->
         <activity
-            android:name=".MainActivity"
+            android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- RegisterActivity declaration -->
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false" />
+
+        <!-- DashboardActivity declaration -->
+        <activity
+            android:name=".DashboardActivity"
+            android:exported="false" />
+
+        <!-- MainActivity is no longer the launcher -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

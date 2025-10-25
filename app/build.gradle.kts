@@ -11,8 +11,9 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.proyectotitulo"
-        minSdk = 26 // Changed to 26 to support adaptive icons
+        // CHANGED: Giving the app a new identity to bypass system's cached permissions
+        applicationId = "com.example.proyectotitulo.healthapp"
+        minSdk = 29
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -47,6 +48,10 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+
+    // Google Health Connect (Stable Version)
+    implementation("androidx.health.connect:connect-client:1.1.0")
+    implementation("androidx.activity:activity-ktx:1.9.0")
 
     // Firebase BOM
     implementation(platform("com.google.firebase:firebase-bom:33.1.1"))

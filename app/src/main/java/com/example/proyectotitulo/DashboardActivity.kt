@@ -4,8 +4,13 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.proyectotitulo.databinding.ActivityDashboardBinding
 import com.google.firebase.auth.FirebaseAuth
@@ -91,6 +96,70 @@ class DashboardActivity : AppCompatActivity() {
             startActivity(intent)
             finish()
         }
+
+        // Cargar mensajes de ejemplo
+        loadSampleMessages()
+    }
+
+    private fun loadSampleMessages() {
+        // Ejemplo de cómo agregar mensajes
+        addMessage("📢 Bienvenido", "¡Bienvenido a tu dashboard de salud! Presiona 'Actualizar' para ver tus datos.", "info")
+    }
+
+    private fun addMessage(title: String, message: String, type: String = "info") {
+        val messagesContainer = binding.messagesContainer
+        binding.textViewNoMessages.visibility = android.view.View.GONE
+
+        // Crear card para el mensaje
+        val messageCard = CardView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 16)
+            }
+            radius = 8f
+            cardElevation = 2f
+            setCardBackgroundColor(when(type) {
+                "warning" -> ContextCompat.getColor(context, android.R.color.holo_orange_light)
+                "error" -> ContextCompat.getColor(context, android.R.color.holo_red_light)
+                "success" -> ContextCompat.getColor(context, android.R.color.holo_green_light)
+                else -> ContextCompat.getColor(context, android.R.color.white)
+            })
+        }
+
+        val messageLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(32, 24, 32, 24)
+        }
+
+        val titleView = TextView(this).apply {
+            text = title
+            textSize = 16f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(ContextCompat.getColor(context, android.R.color.black))
+        }
+
+        val messageView = TextView(this).apply {
+            text = message
+            textSize = 14f
+            setTextColor(ContextCompat.getColor(context, android.R.color.darker_gray))
+            setPadding(0, 8, 0, 0)
+        }
+
+        val timeView = TextView(this).apply {
+            text = "Ahora"
+            textSize = 12f
+            setTextColor(ContextCompat.getColor(context, android.R.color.darker_gray))
+            setPadding(0, 8, 0, 0)
+            gravity = Gravity.END
+        }
+
+        messageLayout.addView(titleView)
+        messageLayout.addView(messageView)
+        messageLayout.addView(timeView)
+        messageCard.addView(messageLayout)
+        messagesContainer.addView(messageCard, 0) // Agregar al principio
     }
 
     private fun checkAvailability() {
@@ -405,10 +474,64 @@ class DashboardActivity : AppCompatActivity() {
             .addOnSuccessListener {
                 Toast.makeText(this, "✅ Datos guardados exitosamente en Firebase", Toast.LENGTH_SHORT).show()
                 Log.d(APP_TAG, "Health data saved successfully to Firebase")
+                
+                // Agregar mensaje de éxito
+                addMessage(
+                    "✅ Datos Actualizados",
+                    "Tus datos de salud se han guardado correctamente en ${healthData.fecha} a las ${healthData.horaRegistro}",
+                    "success"
+                )
+                
+                // Agregar alertas basadas en los datos
+                checkHealthAlerts(healthData)
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "❌ Error al guardar: ${e.message}", Toast.LENGTH_SHORT).show()
                 Log.e(APP_TAG, "Error saving to Firestore", e)
+                
+                addMessage(
+                    "❌ Error al Guardar",
+                    "No se pudieron guardar los datos: ${e.message}",
+                    "error"
+                )
             }
+    }
+
+    private fun checkHealthAlerts(healthData: HealthData) {
+        // Alertas basadas en nivel de estrés
+        if (healthData.nivelDeEstres > 70) {
+            addMessage(
+                "⚠️ Nivel de Estrés Alto",
+                "Tu nivel de estrés es ${healthData.nivelDeEstres}/100. Te recomendamos tomar un descanso y realizar ejercicios de respiración.",
+                "warning"
+            )
+        }
+
+        // Alerta de sueño insuficiente
+        if (healthData.horasDeSueño > 0 && healthData.horasDeSueño < 6) {
+            addMessage(
+                "😴 Sueño Insuficiente",
+                "Dormiste ${String.format("%.1f", healthData.horasDeSueño)} horas. Se recomienda dormir entre 7-9 horas para una óptima salud.",
+                "warning"
+            )
+        }
+
+        // Felicitaciones por meta de pasos
+        if (healthData.pasosDiarios >= 10000) {
+            addMessage(
+                "🎉 ¡Meta Cumplida!",
+                "¡Excelente! Has alcanzado ${healthData.pasosDiarios} pasos hoy. ¡Sigue así!",
+                "success"
+            )
+        }
+
+        // Alerta si el reloj no está colocado
+        if (!healthData.relojColocado) {
+            addMessage(
+                "⌚ Reloj No Detectado",
+                "No se detectaron datos de frecuencia cardíaca. Asegúrate de tener tu reloj colocado para un seguimiento completo.",
+                "info"
+            )
+        }
     }
 }

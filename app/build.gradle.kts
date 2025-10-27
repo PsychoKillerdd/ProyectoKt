@@ -49,9 +49,8 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
-    // Google Health Connect (Stable Version)
-    implementation("androidx.health.connect:connect-client:1.1.0")
-    implementation("androidx.activity:activity-ktx:1.9.0")
+    // Samsung Health SDK - Acceso directo y en tiempo real desde libs
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
 
     // Firebase BOM
     implementation(platform("com.google.firebase:firebase-bom:33.1.1"))

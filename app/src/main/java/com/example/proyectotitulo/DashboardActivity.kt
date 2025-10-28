@@ -502,22 +502,22 @@ class DashboardActivity : AppCompatActivity() {
             .collection("daily_health_data").document(healthData.fecha)
             .set(dataMap)
             .addOnSuccessListener {
-                Toast.makeText(this, "✅ Datos guardados exitosamente en Firebase", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Datos guardados exitosamente", Toast.LENGTH_SHORT).show()
                 Log.d(APP_TAG, "Health data saved successfully to Firebase")
                 
                 // Agregar mensaje de éxito
                 addMessage(
-                    "✅ Datos Actualizados",
+                    "Datos Actualizados",
                     "Tus datos de salud se han guardado correctamente en ${healthData.fecha} a las ${healthData.horaRegistro}",
                     "success"
                 )
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "❌ Error al guardar: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Error al guardar: ${e.message}", Toast.LENGTH_SHORT).show()
                 Log.e(APP_TAG, "Error saving to Firestore", e)
                 
                 addMessage(
-                    "❌ Error al Guardar",
+                    "Error al Guardar",
                     "No se pudieron guardar los datos: ${e.message}",
                     "error"
                 )

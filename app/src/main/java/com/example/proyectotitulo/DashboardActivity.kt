@@ -271,11 +271,17 @@ class DashboardActivity : AppCompatActivity() {
             val heartRateData = readHeartRate(startTime, endTime)
             val screenTime = readScreenTime() // Nota: Esto requiere permisos adicionales del sistema
             
-            // Determinar si el reloj está colocado basándose en la disponibilidad de datos de frecuencia cardíaca
-            val watchWorn = heartRateData.isNotEmpty()
+            // Extraer datos de frecuencia cardíaca
+            val currentHeartRate = heartRateData.getOrNull(0) ?: 0
+            val avgHeartRate = heartRateData.getOrNull(1) ?: 0
+            val maxHeartRate = heartRateData.getOrNull(2) ?: 0
+            val minHeartRate = heartRateData.getOrNull(3) ?: 0
             
-            // Calcular nivel de estrés basado en variabilidad de frecuencia cardíaca
-            val stressLevel = calculateStressLevel(heartRateData)
+            // Determinar si el reloj está colocado basándose en la disponibilidad de datos de frecuencia cardíaca
+            val watchWorn = heartRateData.isNotEmpty() && currentHeartRate > 0
+            
+            // Calcular nivel de estrés basado en la frecuencia cardíaca actual
+            val stressLevel = calculateStressLevel(listOf(currentHeartRate, avgHeartRate, maxHeartRate, minHeartRate))
             
             // Obtener hora y fecha actual
             val currentDateTime = ZonedDateTime.now()
@@ -287,9 +293,9 @@ class DashboardActivity : AppCompatActivity() {
                 pasosDiarios = steps,
                 horasDeSueño = sleepHours,
                 tiempoPantalla = screenTime,
-                frecuenciaCardiaca = heartRateData.getOrNull(0) ?: 0, // Promedio
-                frecuenciaCardiacaMax = heartRateData.getOrNull(1) ?: 0,
-                frecuenciaCardiacaMin = heartRateData.getOrNull(2) ?: 0,
+                frecuenciaCardiaca = currentHeartRate, // Última medición (actual)
+                frecuenciaCardiacaMax = maxHeartRate, // Max del día
+                frecuenciaCardiacaMin = minHeartRate, // Min del día
                 relojColocado = watchWorn,
                 nivelDeEstres = stressLevel,
                 horaRegistro = timeOfDay,
@@ -315,7 +321,10 @@ class DashboardActivity : AppCompatActivity() {
                 appendLine()
                 appendLine("SALUD VITAL")
                 appendLine("───────────────────────────────")
-                appendLine("• Frecuencia Cardíaca: ${healthData.frecuenciaCardiaca} BPM")
+                appendLine("• Frecuencia Cardíaca: ${healthData.frecuenciaCardiaca} BPM (actual)")
+                if (avgHeartRate > 0) {
+                    appendLine("  - Promedio día: $avgHeartRate BPM")
+                }
                 if (healthData.frecuenciaCardiacaMax > 0) {
                     appendLine("  - Máxima: ${healthData.frecuenciaCardiacaMax} BPM")
                     appendLine("  - Mínima: ${healthData.frecuenciaCardiacaMin} BPM")
@@ -408,7 +417,7 @@ class DashboardActivity : AppCompatActivity() {
         return try {
             val response = healthConnectClient.readRecords(request)
             if (response.records.isEmpty()) {
-                return listOf(0, 0, 0) // avg, max, min
+                return listOf(0, 0, 0, 0) // current, avg, max, min
             }
             
             val allBpm = response.records.flatMap { record ->
@@ -416,18 +425,20 @@ class DashboardActivity : AppCompatActivity() {
             }
             
             if (allBpm.isEmpty()) {
-                return listOf(0, 0, 0)
+                return listOf(0, 0, 0, 0)
             }
             
+            // Última medición (más reciente)
+            val current = allBpm.lastOrNull() ?: 0
             val avg = allBpm.average().toLong()
             val max = allBpm.maxOrNull() ?: 0
             val min = allBpm.minOrNull() ?: 0
             
-            Log.d(APP_TAG, "Heart rate - Avg: $avg, Max: $max, Min: $min (${allBpm.size} samples)")
-            listOf(avg, max, min)
+            Log.d(APP_TAG, "Heart rate - Current: $current, Avg: $avg, Max: $max, Min: $min (${allBpm.size} samples)")
+            listOf(current, avg, max, min)
         } catch (e: Exception) {
             Log.e(APP_TAG, "Error reading heart rate: ", e)
-            listOf(0, 0, 0)
+            listOf(0, 0, 0, 0)
         }
     }
 

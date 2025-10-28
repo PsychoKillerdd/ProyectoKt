@@ -13,6 +13,7 @@
     <uses-permission android:name="android.permission.health.READ_WEIGHT" />
     <uses-permission android:name="android.permission.health.READ_HEIGHT" />
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION" />
 
     <!-- Query para Health Connect -->
     <queries>

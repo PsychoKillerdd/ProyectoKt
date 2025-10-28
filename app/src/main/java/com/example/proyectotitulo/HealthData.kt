@@ -8,7 +8,7 @@ import java.util.Date
  *
  * @property pasosDiarios Daily step count
  * @property horasDeSueño Sleep duration in hours
- * @property tiempoPantalla Screen time in hours (if available from device usage stats)
+ * @property saturacionOxigeno Blood oxygen saturation (SpO2) percentage
  * @property frecuenciaCardiaca Heart rate in BPM (beats per minute)
  * @property relojColocado Whether the watch/device is being worn (from heart rate data availability)
  * @property nivelDeEstres Stress level (0-100, derived from heart rate variability if available)
@@ -21,7 +21,7 @@ import java.util.Date
 data class HealthData(
     val pasosDiarios: Long = 0,
     val horasDeSueño: Double = 0.0,
-    val tiempoPantalla: Double = 0.0, // En horas
+    val saturacionOxigeno: Double = 0.0, // SpO2 en porcentaje
     val frecuenciaCardiaca: Long = 0, // Promedio del día en BPM
     val frecuenciaCardiacaMax: Long = 0,
     val frecuenciaCardiacaMin: Long = 0,

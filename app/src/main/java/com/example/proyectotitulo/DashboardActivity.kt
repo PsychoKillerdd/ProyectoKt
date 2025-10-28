@@ -30,6 +30,7 @@ import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
+import androidx.health.connect.client.records.OxygenSaturationRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Length
@@ -69,7 +70,8 @@ class DashboardActivity : AppCompatActivity() {
         HealthPermission.getReadPermission(HeightRecord::class),
         HealthPermission.getReadPermission(SleepSessionRecord::class),
         HealthPermission.getReadPermission(HeartRateRecord::class),
-        HealthPermission.getReadPermission(ExerciseSessionRecord::class)
+        HealthPermission.getReadPermission(ExerciseSessionRecord::class),
+        HealthPermission.getReadPermission(OxygenSaturationRecord::class)
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -217,7 +219,7 @@ class DashboardActivity : AppCompatActivity() {
             val height = readLatestHeight()
             val sleepHours = readSleepHours(startTime, endTime)
             val heartRateData = readHeartRate(startTime, endTime)
-            val screenTime = readScreenTime() // Nota: Esto requiere permisos adicionales del sistema
+            val oxygenSaturation = readOxygenSaturation(startTime, endTime)
             
             // Extraer datos de frecuencia cardíaca
             val currentHeartRate = heartRateData.getOrNull(0) ?: 0
@@ -240,7 +242,7 @@ class DashboardActivity : AppCompatActivity() {
             val healthData = HealthData(
                 pasosDiarios = steps,
                 horasDeSueño = sleepHours,
-                tiempoPantalla = screenTime,
+                saturacionOxigeno = oxygenSaturation,
                 frecuenciaCardiaca = currentHeartRate, // Última medición (actual)
                 frecuenciaCardiacaMax = maxHeartRate, // Max del día
                 frecuenciaCardiacaMin = minHeartRate, // Min del día
@@ -278,11 +280,13 @@ class DashboardActivity : AppCompatActivity() {
                     appendLine("  - Mínima: ${healthData.frecuenciaCardiacaMin} BPM")
                 }
                 appendLine("• Nivel de Estrés: ${healthData.nivelDeEstres}/100")
+                if (healthData.saturacionOxigeno > 0) {
+                    appendLine("• Saturación de Oxígeno: ${"%.1f".format(healthData.saturacionOxigeno)}%")
+                }
                 appendLine()
                 appendLine("DESCANSO")
                 appendLine("───────────────────────────────")
                 appendLine("• Sueño: ${"%.1f".format(healthData.horasDeSueño)} horas")
-                appendLine("• Tiempo Pantalla: ${"%.1f".format(healthData.tiempoPantalla)} horas")
                 appendLine()
                 appendLine("═══════════════════════════════")
             }
@@ -390,13 +394,27 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    private fun readScreenTime(): Double {
-        // Nota: El tiempo de pantalla no está disponible directamente en Health Connect
-        // Se necesitaría acceso a UsageStatsManager del sistema Android
-        // Por ahora, retornamos 0.0
-        // Para implementar esto correctamente, necesitarías permisos de PACKAGE_USAGE_STATS
-        Log.d(APP_TAG, "Screen time data not available from Health Connect")
-        return 0.0
+    private suspend fun readOxygenSaturation(startTime: Instant, endTime: Instant): Double {
+        val request = ReadRecordsRequest(
+            recordType = OxygenSaturationRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+        )
+        return try {
+            val response = healthConnectClient.readRecords(request)
+            if (response.records.isNotEmpty()) {
+                // Obtener la última lectura
+                val lastReading = response.records.last()
+                val spo2 = lastReading.percentage.value
+                Log.d(APP_TAG, "Oxygen saturation: $spo2% (${response.records.size} samples)")
+                spo2
+            } else {
+                Log.d(APP_TAG, "No oxygen saturation data available")
+                0.0
+            }
+        } catch (e: Exception) {
+            Log.e(APP_TAG, "Error reading oxygen saturation: ", e)
+            0.0
+        }
     }
 
     private fun calculateStressLevel(heartRateData: List<Long>): Int {
@@ -442,7 +460,7 @@ class DashboardActivity : AppCompatActivity() {
         val dataMap = mapOf(
             "pasosDiarios" to healthData.pasosDiarios,
             "horasDeSueño" to healthData.horasDeSueño,
-            "tiempoPantalla" to healthData.tiempoPantalla,
+            "saturacionOxigeno" to healthData.saturacionOxigeno,
             "frecuenciaCardiaca" to healthData.frecuenciaCardiaca,
             "frecuenciaCardiacaMax" to healthData.frecuenciaCardiacaMax,
             "frecuenciaCardiacaMin" to healthData.frecuenciaCardiacaMin,

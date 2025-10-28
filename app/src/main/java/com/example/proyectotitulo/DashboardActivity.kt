@@ -113,71 +113,19 @@ class DashboardActivity : AppCompatActivity() {
 
     private fun loadSampleMessages() {
         // Mensaje de bienvenida
-        addMessage("Bienvenido", "Los datos se actualizan automáticamente cada 30 minutos. Presiona 'Actualizar' para ver tus datos al instante.", "info")
+        binding.textViewNotifications.text = "Bienvenido\n\nLos datos se actualizan automáticamente cada 30 minutos. Presiona 'Actualizar' para ver tus datos al instante."
     }
 
     private fun addMessage(title: String, message: String, type: String = "info") {
-        val messagesContainer = binding.messagesContainer
+        // Actualizar el texto de notificaciones de forma simple
+        val currentText = binding.textViewNotifications.text.toString()
+        val newMessage = "$title\n$message\n\n"
         
-        // Ocultar estado vacío
-        binding.root.findViewById<LinearLayout>(R.id.emptyStateLayout)?.visibility = android.view.View.GONE
-
-        // Crear card para el mensaje
-        val messageCard = CardView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, 12)
-            }
-            radius = 12f
-            cardElevation = 4f
-            setCardBackgroundColor(when(type) {
-                "warning" -> android.graphics.Color.parseColor("#FFF3E0")
-                "error" -> android.graphics.Color.parseColor("#FFEBEE")
-                "success" -> android.graphics.Color.parseColor("#E8F5E9")
-                else -> android.graphics.Color.parseColor("#F5F7FA")
-            })
+        if (currentText.contains("Bienvenido") || currentText.contains("No hay")) {
+            binding.textViewNotifications.text = newMessage
+        } else {
+            binding.textViewNotifications.text = "$newMessage$currentText"
         }
-
-        val messageLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(20, 16, 20, 16)
-        }
-
-        val titleView = TextView(this).apply {
-            text = title
-            textSize = 16f
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setTextColor(when(type) {
-                "warning" -> android.graphics.Color.parseColor("#E65100")
-                "error" -> android.graphics.Color.parseColor("#C62828")
-                "success" -> android.graphics.Color.parseColor("#2E7D32")
-                else -> android.graphics.Color.parseColor("#263238")
-            })
-        }
-
-        val messageView = TextView(this).apply {
-            text = message
-            textSize = 14f
-            setTextColor(android.graphics.Color.parseColor("#546E7A"))
-            setPadding(0, 8, 0, 0)
-            setLineSpacing(4f, 1f)
-        }
-
-        val timeView = TextView(this).apply {
-            text = "Ahora"
-            textSize = 12f
-            setTextColor(android.graphics.Color.parseColor("#90A4AE"))
-            setPadding(0, 8, 0, 0)
-            gravity = Gravity.END
-        }
-
-        messageLayout.addView(titleView)
-        messageLayout.addView(messageView)
-        messageLayout.addView(timeView)
-        messageCard.addView(messageLayout)
-        messagesContainer.addView(messageCard, 0) // Agregar al principio
     }
 
     private fun checkAvailability() {
@@ -339,7 +287,7 @@ class DashboardActivity : AppCompatActivity() {
                 appendLine("═══════════════════════════════")
             }
             
-            binding.textViewContentBody.text = uiText
+            binding.textViewHealthData.text = uiText
             
             // Guardar en Firebase
             saveHealthDataToFirebase(healthData)

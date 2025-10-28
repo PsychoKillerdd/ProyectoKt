@@ -112,8 +112,8 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun loadSampleMessages() {
-        // Ejemplo de cómo agregar mensajes
-        addMessage("📢 Bienvenido", "¡Bienvenido a tu dashboard de salud! Tus datos se actualizarán automáticamente cada 30 minutos. También puedes presionar 'Actualizar' para ver tus datos al instante.", "info")
+        // Mensaje de bienvenida
+        addMessage("Bienvenido", "Los datos se actualizan automáticamente cada 30 minutos. Presiona 'Actualizar' para ver tus datos al instante.", "info")
     }
 
     private fun addMessage(title: String, message: String, type: String = "info") {
@@ -302,20 +302,32 @@ class DashboardActivity : AppCompatActivity() {
             
             // Actualizar UI
             val uiText = buildString {
-                appendLine("📅 Fecha: ${healthData.fecha}")
-                appendLine("🕐 Hora: ${healthData.horaRegistro}")
-                appendLine("👟 Pasos: ${healthData.pasosDiarios}")
-                appendLine("😴 Sueño: ${"%.1f".format(healthData.horasDeSueño)} horas")
-                appendLine("📱 Tiempo Pantalla: ${"%.1f".format(healthData.tiempoPantalla)} horas")
-                appendLine("❤️ Frecuencia Cardíaca: ${healthData.frecuenciaCardiaca} BPM")
+                appendLine("═══════════════════════════════")
+                appendLine("RESUMEN DE SALUD")
+                appendLine("═══════════════════════════════")
+                appendLine()
+                appendLine("Fecha: ${healthData.fecha}")
+                appendLine("Hora: ${healthData.horaRegistro}")
+                appendLine()
+                appendLine("ACTIVIDAD FÍSICA")
+                appendLine("───────────────────────────────")
+                appendLine("• Pasos: ${healthData.pasosDiarios}")
+                appendLine()
+                appendLine("SALUD VITAL")
+                appendLine("───────────────────────────────")
+                appendLine("• Frecuencia Cardíaca: ${healthData.frecuenciaCardiaca} BPM")
                 if (healthData.frecuenciaCardiacaMax > 0) {
-                    appendLine("   Max: ${healthData.frecuenciaCardiacaMax} BPM")
-                    appendLine("   Min: ${healthData.frecuenciaCardiacaMin} BPM")
+                    appendLine("  - Máxima: ${healthData.frecuenciaCardiacaMax} BPM")
+                    appendLine("  - Mínima: ${healthData.frecuenciaCardiacaMin} BPM")
                 }
-                appendLine("⌚ Reloj Colocado: ${if (healthData.relojColocado) "Sí" else "No"}")
-                appendLine("😰 Nivel de Estrés: ${healthData.nivelDeEstres}/100")
-                appendLine("⚖️ Peso: ${"%.1f".format(healthData.peso)} kg")
-                appendLine("📏 Altura: ${"%.2f".format(healthData.altura)} m")
+                appendLine("• Nivel de Estrés: ${healthData.nivelDeEstres}/100")
+                appendLine()
+                appendLine("DESCANSO")
+                appendLine("───────────────────────────────")
+                appendLine("• Sueño: ${"%.1f".format(healthData.horasDeSueño)} horas")
+                appendLine("• Tiempo Pantalla: ${"%.1f".format(healthData.tiempoPantalla)} horas")
+                appendLine()
+                appendLine("═══════════════════════════════")
             }
             
             binding.textViewContentBody.text = uiText

@@ -45,9 +45,9 @@ class DashboardActivity : AppCompatActivity() {
 
     private val APP_TAG = "HealthConnectApp"
     
-    // Handler para la recolección automática cada 30 minutos
+    // Handler para la recolección automática cada 5 minutos
     private val autoCollectHandler = Handler(Looper.getMainLooper())
-    private val autoCollectInterval = 30 * 60 * 1000L // 30 minutos en milisegundos
+    private val autoCollectInterval = 5 * 60 * 1000L // 5 minutos = 288 registros/día para IA
 
     private val providerPackageName = "com.google.android.apps.healthdata"
     private val healthConnectClient: HealthConnectClient by lazy { HealthConnectClient.getOrCreate(this) }
@@ -115,7 +115,7 @@ class DashboardActivity : AppCompatActivity() {
 
     private fun loadSampleMessages() {
         // Mensaje de bienvenida
-        binding.textViewNotifications.text = "Bienvenido\n\nLos datos se actualizan automáticamente cada 30 minutos. Presiona 'Actualizar' para ver tus datos al instante."
+        binding.textViewNotifications.text = "Bienvenido\n\nLos datos se actualizan automáticamente cada 5 minutos para recolectar más información. Presiona 'Actualizar' para ver tus datos al instante.\n\n📊 Dataset para IA: 288 registros/día"
     }
 
     private fun addMessage(title: String, message: String, type: String = "info") {

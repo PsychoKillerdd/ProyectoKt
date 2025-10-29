@@ -475,12 +475,15 @@ class DashboardActivity : AppCompatActivity() {
         
         Log.d(APP_TAG, "Saving health data to Firebase: $dataMap")
 
+        // Usar fecha + timestamp para ID único (permite múltiples registros por día)
+        val documentId = "${healthData.fecha}_${System.currentTimeMillis()}"
+        
         firestore.collection("users").document(userId)
-            .collection("daily_health_data").document(healthData.fecha)
+            .collection("health_records").document(documentId)
             .set(dataMap)
             .addOnSuccessListener {
                 Toast.makeText(this, "Datos guardados exitosamente", Toast.LENGTH_SHORT).show()
-                Log.d(APP_TAG, "Health data saved successfully to Firebase")
+                Log.d(APP_TAG, "Health data saved successfully to Firebase with ID: $documentId")
                 
                 // Agregar mensaje de éxito
                 addMessage(

@@ -1,7 +1,10 @@
 package com.example.proyectotitulo
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -12,8 +15,12 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.proyectotitulo.databinding.ActivityDashboardBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -21,6 +28,7 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.util.Date
+import java.util.concurrent.TimeUnit
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
@@ -38,6 +46,10 @@ import androidx.health.connect.client.units.Mass
 import java.time.Duration
 
 class DashboardActivity : AppCompatActivity() {
+
+    companion object {
+        private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1002
+    }
 
     private lateinit var binding: ActivityDashboardBinding
     private lateinit var firebaseAuth: FirebaseAuth
@@ -109,8 +121,44 @@ class DashboardActivity : AppCompatActivity() {
         // Cargar mensajes de ejemplo
         loadSampleMessages()
         
-        // Iniciar recolección automática cada 30 minutos
+        // Solicitar permisos de notificaciones (Android 13+)
+        requestNotificationPermission()
+        
+        // Programar notificaciones cada 2 horas
+        scheduleHealthReminders()
+        
+        // Iniciar recolección automática cada 5 minutos
         startAutoCollection()
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    NOTIFICATION_PERMISSION_REQUEST_CODE
+                )
+            }
+        }
+    }
+
+    private fun scheduleHealthReminders() {
+        val reminderRequest = PeriodicWorkRequestBuilder<HealthReminderWorker>(
+            2, TimeUnit.HOURS  // Cada 2 horas
+        ).build()
+
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            "health_reminders",
+            ExistingPeriodicWorkPolicy.KEEP,  // Mantener si ya existe
+            reminderRequest
+        )
+        
+        Log.d(APP_TAG, "Health reminders scheduled: Every 2 hours")
     }
 
     private fun loadSampleMessages() {

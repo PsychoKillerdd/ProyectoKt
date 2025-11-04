@@ -55,6 +55,9 @@ dependencies {
     // Activity para Health Connect permissions
     implementation("androidx.activity:activity-ktx:1.9.0")
 
+    // WorkManager para notificaciones en background
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
     // Firebase BOM
     implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
     // Firebase Auth for authentication

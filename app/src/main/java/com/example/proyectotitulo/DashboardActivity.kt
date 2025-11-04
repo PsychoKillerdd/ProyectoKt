@@ -319,18 +319,36 @@ class DashboardActivity : AppCompatActivity() {
                 appendLine()
                 appendLine("SALUD VITAL")
                 appendLine("───────────────────────────────")
-                appendLine("• Frecuencia Cardíaca: ${healthData.frecuenciaCardiaca} BPM (actual)")
-                if (avgHeartRate > 0) {
-                    appendLine("  - Promedio día: $avgHeartRate BPM")
+                
+                // Mostrar estado del reloj y frecuencia cardíaca
+                if (healthData.frecuenciaCardiaca > 0) {
+                    appendLine("• Frecuencia Cardíaca: ${healthData.frecuenciaCardiaca} BPM (actual)")
+                    if (avgHeartRate > 0) {
+                        appendLine("  - Promedio día: $avgHeartRate BPM")
+                    }
+                    if (healthData.frecuenciaCardiacaMax > 0) {
+                        appendLine("  - Máxima: ${healthData.frecuenciaCardiacaMax} BPM")
+                        appendLine("  - Mínima: ${healthData.frecuenciaCardiacaMin} BPM")
+                    }
+                } else {
+                    appendLine("• Frecuencia Cardíaca: ⌚ Reloj no colocado")
+                    appendLine("  - Coloca tu smartwatch para medir")
                 }
-                if (healthData.frecuenciaCardiacaMax > 0) {
-                    appendLine("  - Máxima: ${healthData.frecuenciaCardiacaMax} BPM")
-                    appendLine("  - Mínima: ${healthData.frecuenciaCardiacaMin} BPM")
+                
+                // Mostrar nivel de estrés
+                if (healthData.nivelDeEstres > 0) {
+                    appendLine("• Nivel de Estrés: ${healthData.nivelDeEstres}/100")
+                } else {
+                    appendLine("• Nivel de Estrés: -- (sin datos de RC)")
                 }
-                appendLine("• Nivel de Estrés: ${healthData.nivelDeEstres}/100")
+                
+                // Mostrar saturación de oxígeno
                 if (healthData.saturacionOxigeno > 0) {
                     appendLine("• Saturación de Oxígeno: ${"%.1f".format(healthData.saturacionOxigeno)}%")
+                } else {
+                    appendLine("• Saturación de Oxígeno: -- (sin medición)")
                 }
+                
                 appendLine()
                 appendLine("DESCANSO")
                 appendLine("───────────────────────────────")
@@ -341,7 +359,7 @@ class DashboardActivity : AppCompatActivity() {
             
             binding.textViewHealthData.text = uiText
             
-            // Guardar en Firebase
+            // Guardar en Firebase (siempre guarda, incluso con valores 0)
             saveHealthDataToFirebase(healthData)
         }
     }
@@ -530,13 +548,25 @@ class DashboardActivity : AppCompatActivity() {
             .collection("health_records").document(documentId)
             .set(dataMap)
             .addOnSuccessListener {
-                Toast.makeText(this, "Datos guardados exitosamente", Toast.LENGTH_SHORT).show()
+                // Mensaje diferente según si el reloj estaba colocado
+                val message = if (healthData.relojColocado) {
+                    "Datos guardados: RC ${healthData.frecuenciaCardiaca} BPM ✓"
+                } else {
+                    "Datos guardados (⌚ Reloj no colocado - RC: 0)"
+                }
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
                 Log.d(APP_TAG, "Health data saved successfully to Firebase with ID: $documentId")
                 
-                // Agregar mensaje de éxito
+                // Agregar mensaje de éxito con detalle
+                val detailMessage = if (healthData.relojColocado) {
+                    "Datos guardados correctamente en ${healthData.fecha} a las ${healthData.horaRegistro}"
+                } else {
+                    "Datos guardados en ${healthData.fecha} a las ${healthData.horaRegistro}. Nota: Reloj no colocado (FC: 0 BPM)"
+                }
+                
                 addMessage(
                     "Datos Actualizados",
-                    "Tus datos de salud se han guardado correctamente en ${healthData.fecha} a las ${healthData.horaRegistro}",
+                    detailMessage,
                     "success"
                 )
             }

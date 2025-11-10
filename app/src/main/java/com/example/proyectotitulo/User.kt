@@ -14,6 +14,7 @@ import java.util.Date
  * @property weight User's weight in kilograms.
  * @property goal User's personal fitness or health goal.
  * @property sex User's sex (0 for female, 1 for male).
+ * @property emergencyContact Emergency contact phone number.
  * @property creationDate Timestamp of when the user account was created.
  */
 data class User(
@@ -25,6 +26,7 @@ data class User(
     val weight: Double = 0.0,
     val goal: String = "",
     val sex: Int = -1, // -1 indicates not set
+    val emergencyContact: String = "", // Emergency contact phone number
     @ServerTimestamp
     val creationDate: Date? = null
 )

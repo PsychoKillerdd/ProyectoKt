@@ -81,6 +81,28 @@
                 android:inputType="textEmailAddress" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Emergency Contact -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/textFieldEmergencyContact"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="Contacto de Emergencia"
+            app:prefixText="+56 "
+            app:helperText="Número de teléfono de tu contacto de emergencia"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textFieldEmail">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editTextEmergencyContact"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="phone"
+                android:maxLength="15" />
+        </com.google.android.material.textfield.TextInputLayout>
+
         <!-- Password -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/textFieldPassword"
@@ -92,7 +114,7 @@
             app:endIconMode="password_toggle"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textFieldEmail">
+            app:layout_constraintTop_toBottomOf="@+id/textFieldEmergencyContact">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editTextPassword"

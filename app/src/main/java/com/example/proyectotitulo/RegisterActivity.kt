@@ -55,6 +55,7 @@ class RegisterActivity : AppCompatActivity() {
         val name = binding.editTextName.text.toString().trim()
         val dob = binding.editTextDob.text.toString().trim()
         val email = binding.editTextEmail.text.toString().trim()
+        val emergencyContact = binding.editTextEmergencyContact.text.toString().trim()
         val password = binding.editTextPassword.text.toString()
         val confirmPassword = binding.editTextConfirmPassword.text.toString()
         val height = binding.editTextHeight.text.toString().toDoubleOrNull() ?: 0.0
@@ -63,8 +64,13 @@ class RegisterActivity : AppCompatActivity() {
         val selectedSexId = binding.radioGroupSex.checkedRadioButtonId
 
         // --- 2. Validate data ---
-        if (name.isEmpty() || dob.isEmpty() || email.isEmpty() || password.isEmpty() || goal.isEmpty() || selectedSexId == -1) {
+        if (name.isEmpty() || dob.isEmpty() || email.isEmpty() || emergencyContact.isEmpty() || password.isEmpty() || goal.isEmpty() || selectedSexId == -1) {
             Toast.makeText(this, "Por favor, completa todos los campos", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (emergencyContact.length < 8) {
+            Toast.makeText(this, "Por favor, ingresa un número de contacto válido", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -101,7 +107,8 @@ class RegisterActivity : AppCompatActivity() {
                         height = height,
                         weight = weight,
                         goal = goal,
-                        sex = sex
+                        sex = sex,
+                        emergencyContact = emergencyContact // Emergency contact phone number
                         // creationDate will be set automatically by Firestore
                     )
 

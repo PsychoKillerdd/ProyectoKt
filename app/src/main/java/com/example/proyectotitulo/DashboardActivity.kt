@@ -6,8 +6,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.Gravity
 import android.widget.LinearLayout
@@ -44,6 +42,17 @@ import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Length
 import androidx.health.connect.client.units.Mass
 import java.time.Duration
+import com.github.mikephil.charting.charts.BarChart
+import com.github.mikephil.charting.data.BarData
+import com.github.mikephil.charting.data.BarDataSet
+import com.github.mikephil.charting.data.BarEntry
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import com.github.mikephil.charting.formatter.ValueFormatter
+import com.github.mikephil.charting.components.XAxis
+import android.graphics.Color
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import com.google.firebase.firestore.Query
 
 class DashboardActivity : AppCompatActivity() {
 
@@ -56,10 +65,6 @@ class DashboardActivity : AppCompatActivity() {
     private lateinit var firestore: FirebaseFirestore
 
     private val APP_TAG = "HealthConnectApp"
-    
-    // Handler para la recolección automática cada 5 minutos
-    private val autoCollectHandler = Handler(Looper.getMainLooper())
-    private val autoCollectInterval = 5 * 60 * 1000L // 5 minutos = 288 registros/día para IA
 
     private val providerPackageName = "com.google.android.apps.healthdata"
     private val healthConnectClient: HealthConnectClient by lazy { HealthConnectClient.getOrCreate(this) }
@@ -106,11 +111,11 @@ class DashboardActivity : AppCompatActivity() {
         }
 
         binding.buttonHistory.setOnClickListener {
-            Toast.makeText(this, "Funcionalidad de historial no implementada", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, HistoryActivity::class.java)
+            startActivity(intent)
         }
 
         binding.buttonLogout.setOnClickListener {
-            autoCollectHandler.removeCallbacks(autoCollectRunnable)
             firebaseAuth.signOut()
             val intent = Intent(this, LoginActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -124,11 +129,11 @@ class DashboardActivity : AppCompatActivity() {
         // Solicitar permisos de notificaciones (Android 13+)
         requestNotificationPermission()
         
-        // Programar notificaciones cada 2 horas
+        // Programar notificaciones cada 2 horas (8 AM - 12 AM)
         scheduleHealthReminders()
         
-        // Iniciar recolección automática cada 5 minutos
-        startAutoCollection()
+        // Cargar gráfico de sueño
+        loadSleepChart()
     }
 
     private fun requestNotificationPermission() {
@@ -150,20 +155,23 @@ class DashboardActivity : AppCompatActivity() {
     private fun scheduleHealthReminders() {
         val reminderRequest = PeriodicWorkRequestBuilder<HealthReminderWorker>(
             2, TimeUnit.HOURS  // Cada 2 horas
-        ).build()
+        )
+        .setInitialDelay(1, TimeUnit.MINUTES)  // Esperar 1 minuto antes de la primera ejecución
+        .build()
 
         WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
             "health_reminders",
-            ExistingPeriodicWorkPolicy.KEEP,  // Mantener si ya existe
+            ExistingPeriodicWorkPolicy.REPLACE,  // Reemplazar si ya existe para asegurar configuración actualizada
             reminderRequest
         )
         
-        Log.d(APP_TAG, "Health reminders scheduled: Every 2 hours")
+        Log.d(APP_TAG, "Health reminders scheduled: Every 2 hours (8 AM - 12 AM)")
+        Log.d(APP_TAG, "WorkManager periodic work enqueued with ID: health_reminders")
     }
 
     private fun loadSampleMessages() {
         // Mensaje de bienvenida
-        binding.textViewNotifications.text = "Bienvenido\n\nLos datos se actualizan automáticamente cada 5 minutos para recolectar más información. Presiona 'Actualizar' para ver tus datos al instante.\n\n📊 Dataset para IA: 288 registros/día"
+        binding.textViewNotifications.text = "Bienvenido\n\nPresiona 'Actualizar' para recopilar tus datos de salud.\n\n📊 Recibirás recordatorios cada 2 horas (8 AM - 12 AM). La última notificación te recordará colocarte el reloj."
     }
 
     private fun addMessage(title: String, message: String, type: String = "info") {
@@ -523,6 +531,30 @@ class DashboardActivity : AppCompatActivity() {
     private fun saveHealthDataToFirebase(healthData: HealthData) {
         val userId = firebaseAuth.currentUser?.uid ?: return
         
+        // Validar que al menos un dato sea diferente de 0
+        val hasValidData = healthData.pasosDiarios > 0 ||
+                          healthData.horasDeSueño > 0.0 ||
+                          healthData.saturacionOxigeno > 0.0 ||
+                          healthData.frecuenciaCardiaca > 0 ||
+                          healthData.peso > 0.0 ||
+                          healthData.altura > 0.0
+        
+        if (!hasValidData) {
+            Toast.makeText(
+                this, 
+                "⚠️ No se guardaron los datos: Todos los valores son 0", 
+                Toast.LENGTH_LONG
+            ).show()
+            Log.d(APP_TAG, "Data not saved: All values are 0")
+            
+            addMessage(
+                "Datos No Guardados",
+                "No se registraron datos porque todos los valores son 0. Verifica que el reloj esté conectado y con datos disponibles.",
+                "warning"
+            )
+            return
+        }
+        
         val dataMap = mapOf(
             "pasosDiarios" to healthData.pasosDiarios,
             "horasDeSueño" to healthData.horasDeSueño,
@@ -569,6 +601,9 @@ class DashboardActivity : AppCompatActivity() {
                     detailMessage,
                     "success"
                 )
+                
+                // Recargar gráfico de sueño
+                loadSleepChart()
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Error al guardar: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -582,24 +617,149 @@ class DashboardActivity : AppCompatActivity() {
             }
     }
     
-    // --- Auto-Collection Functions ---
+    // --- Sleep Chart Functions ---
     
-    private val autoCollectRunnable = object : Runnable {
-        override fun run() {
-            Log.d(APP_TAG, "Auto-collection: Starting automatic data collection...")
-            checkPermissionsAndRun()
-            autoCollectHandler.postDelayed(this, autoCollectInterval)
+    private fun loadSleepChart() {
+        val userId = firebaseAuth.currentUser?.uid ?: return
+        
+        // Calcular las fechas de los últimos 5 días
+        val today = LocalDate.now()
+        val dates = mutableListOf<String>()
+        val dateLabels = mutableListOf<String>()
+        
+        for (i in 4 downTo 0) {
+            val date = today.minusDays(i.toLong())
+            dates.add(date.toString())
+            
+            // Formatear etiqueta (Ej: "Lun 10")
+            val dayOfWeek = when(date.dayOfWeek.value) {
+                1 -> "Lun"
+                2 -> "Mar"
+                3 -> "Mié"
+                4 -> "Jue"
+                5 -> "Vie"
+                6 -> "Sáb"
+                7 -> "Dom"
+                else -> ""
+            }
+            dateLabels.add("$dayOfWeek ${date.dayOfMonth}")
         }
+        
+        Log.d(APP_TAG, "Loading sleep chart for dates: $dates")
+        
+        // Consultar Firebase para obtener datos de sueño de los últimos 5 días
+        firestore.collection("users").document(userId)
+            .collection("health_records")
+            .orderBy("fecha", Query.Direction.DESCENDING)
+            .limit(100) // Obtener últimos 100 registros para asegurar que cubrimos 5 días
+            .get()
+            .addOnSuccessListener { documents ->
+                Log.d(APP_TAG, "Fetched ${documents.size()} documents from Firebase")
+                
+                // Agrupar por fecha y calcular promedio de horas de sueño
+                val sleepByDate = mutableMapOf<String, MutableList<Double>>()
+                
+                for (document in documents) {
+                    val fecha = document.getString("fecha") ?: continue
+                    val horasSueno = document.getDouble("horasDeSueño") ?: 0.0
+                    
+                    Log.d(APP_TAG, "Document: fecha=$fecha, horasDeSueño=$horasSueno")
+                    
+                    if (dates.contains(fecha) && horasSueno > 0.0) {
+                        if (!sleepByDate.containsKey(fecha)) {
+                            sleepByDate[fecha] = mutableListOf()
+                        }
+                        sleepByDate[fecha]?.add(horasSueno)
+                    }
+                }
+                
+                Log.d(APP_TAG, "Grouped sleep data: $sleepByDate")
+                
+                // Crear entradas para el gráfico
+                val entries = mutableListOf<BarEntry>()
+                
+                for ((index, date) in dates.withIndex()) {
+                    val sleepValues = sleepByDate[date]
+                    val sleepHours = if (sleepValues != null && sleepValues.isNotEmpty()) {
+                        sleepValues.average().toFloat()
+                    } else {
+                        0f
+                    }
+                    entries.add(BarEntry(index.toFloat(), sleepHours))
+                    Log.d(APP_TAG, "Chart entry - Date: $date (${dateLabels[index]}), Sleep: $sleepHours hours")
+                }
+                
+                // Configurar gráfico
+                setupBarChart(entries, dateLabels)
+            }
+            .addOnFailureListener { e ->
+                Log.e(APP_TAG, "Error loading sleep data for chart", e)
+                // Mostrar gráfico vacío
+                setupBarChart(listOf(
+                    BarEntry(0f, 0f),
+                    BarEntry(1f, 0f),
+                    BarEntry(2f, 0f),
+                    BarEntry(3f, 0f),
+                    BarEntry(4f, 0f)
+                ), dateLabels)
+            }
     }
     
-    private fun startAutoCollection() {
-        Log.d(APP_TAG, "Starting auto-collection every ${autoCollectInterval / 1000 / 60} minutes")
-        autoCollectHandler.postDelayed(autoCollectRunnable, autoCollectInterval)
-    }
-    
-    override fun onDestroy() {
-        super.onDestroy()
-        autoCollectHandler.removeCallbacks(autoCollectRunnable)
-        Log.d(APP_TAG, "Auto-collection stopped")
+    private fun setupBarChart(entries: List<BarEntry>, labels: List<String>) {
+        val barChart = binding.sleepBarChart
+        
+        // Crear dataset
+        val dataSet = BarDataSet(entries, "Horas de Sueño")
+        dataSet.color = Color.parseColor("#1877F2") // Azul de Facebook
+        dataSet.valueTextColor = Color.BLACK
+        dataSet.valueTextSize = 10f
+        
+        // ValueFormatter personalizado para mostrar "No registrado" cuando el valor sea 0
+        dataSet.valueFormatter = object : ValueFormatter() {
+            override fun getFormattedValue(value: Float): String {
+                return if (value == 0f) {
+                    "Sin datos"
+                } else {
+                    String.format("%.1fh", value)
+                }
+            }
+        }
+        
+        // Crear BarData
+        val barData = BarData(dataSet)
+        barData.barWidth = 0.6f
+        
+        // Configurar el gráfico
+        barChart.data = barData
+        barChart.description.isEnabled = false
+        barChart.legend.isEnabled = true
+        barChart.legend.textSize = 12f
+        
+        // Configurar eje X (fechas)
+        val xAxis = barChart.xAxis
+        xAxis.valueFormatter = IndexAxisValueFormatter(labels)
+        xAxis.position = XAxis.XAxisPosition.BOTTOM
+        xAxis.granularity = 1f
+        xAxis.setDrawGridLines(false)
+        xAxis.textSize = 11f
+        
+        // Configurar eje Y izquierdo (horas)
+        val leftAxis = barChart.axisLeft
+        leftAxis.axisMinimum = 0f
+        leftAxis.axisMaximum = 12f // Máximo 12 horas
+        leftAxis.granularity = 2f
+        leftAxis.textSize = 11f
+        leftAxis.setDrawGridLines(true)
+        
+        // Deshabilitar eje Y derecho
+        barChart.axisRight.isEnabled = false
+        
+        // Configuraciones adicionales
+        barChart.setFitBars(true)
+        barChart.animateY(1000)
+        barChart.invalidate() // Refrescar el gráfico
+        
+        Log.d(APP_TAG, "Sleep chart configured with ${entries.size} entries")
     }
 }
+

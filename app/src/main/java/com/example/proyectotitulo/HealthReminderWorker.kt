@@ -9,6 +9,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import java.util.Calendar
 import kotlin.random.Random
 
 class HealthReminderWorker(
@@ -40,9 +41,27 @@ class HealthReminderWorker(
     )
 
     override fun doWork(): Result {
-        createNotificationChannel()
-        showNotification()
-        return Result.success()
+        return try {
+            val calendar = Calendar.getInstance()
+            val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+            
+            android.util.Log.d("HealthReminderWorker", "Worker executed at hour: $currentHour")
+            
+            // Solo mostrar notificaciones entre las 8 AM (8) y las 12 AM (0 = medianoche)
+            // 12 AM = 0 horas, entonces permitimos de 8-23 horas y hora 0
+            if (currentHour in 8..23 || currentHour == 0) {
+                createNotificationChannel()
+                showNotification(currentHour)
+                android.util.Log.d("HealthReminderWorker", "Notification shown at hour: $currentHour")
+            } else {
+                android.util.Log.d("HealthReminderWorker", "Notification skipped (outside 8 AM - 12 AM): $currentHour")
+            }
+            
+            Result.success()
+        } catch (e: Exception) {
+            android.util.Log.e("HealthReminderWorker", "Error in doWork: ${e.message}", e)
+            Result.failure()
+        }
     }
 
     private fun createNotificationChannel() {
@@ -54,14 +73,17 @@ class HealthReminderWorker(
                 description = descriptionText
                 enableVibration(true)
                 enableLights(true)
+                setShowBadge(true)
             }
 
             val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
+            
+            android.util.Log.d("HealthReminderWorker", "Notification channel created: $CHANNEL_ID")
         }
     }
 
-    private fun showNotification() {
+    private fun showNotification(currentHour: Int) {
         val intent = Intent(applicationContext, DashboardActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -73,8 +95,14 @@ class HealthReminderWorker(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Seleccionar mensaje aleatorio
-        val message = motivationalMessages[Random.nextInt(motivationalMessages.size)]
+        // Mensaje especial para las 12 AM (medianoche) - hora 0
+        val message = if (currentHour == 0) {
+            "🌙 ¡Última notificación del día! Recuerda colocarte el reloj inteligente antes de dormir para registrar tus datos de sueño."
+        } else {
+            motivationalMessages[Random.nextInt(motivationalMessages.size)]
+        }
+
+        android.util.Log.d("HealthReminderWorker", "Showing notification with message: $message")
 
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
@@ -82,12 +110,16 @@ class HealthReminderWorker(
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setVibrate(longArrayOf(0, 500, 200, 500))
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
 
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(NOTIFICATION_ID, notification)
+        
+        android.util.Log.d("HealthReminderWorker", "Notification sent to NotificationManager")
     }
 }

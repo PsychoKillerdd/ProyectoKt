@@ -70,6 +70,9 @@ dependencies {
     // App Check debug provider
     implementation("com.google.firebase:firebase-appcheck-debug")
 
+    // MPAndroidChart para gráficos
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

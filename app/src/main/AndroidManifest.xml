@@ -49,27 +49,51 @@
                 android:value="androidx.startup" />
         </provider>
 
-        <!-- LoginActivity is now the starting point of the app -->
+        <!-- LoginComposeActivity is now the starting point (Jetpack Compose) -->
         <activity
-            android:name=".LoginActivity"
-            android:exported="true">
+            android:name=".LoginComposeActivity"
+            android:exported="true"
+            android:theme="@style/Theme.ProyectoTitulo">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- RegisterActivity declaration -->
+        <!-- Legacy LoginActivity (Views) -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false" />
+
+        <!-- RegisterComposeActivity (Jetpack Compose) -->
+        <activity
+            android:name=".RegisterComposeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ProyectoTitulo" />
+
+        <!-- Legacy RegisterActivity (Views) -->
         <activity
             android:name=".RegisterActivity"
             android:exported="false" />
 
-        <!-- DashboardActivity declaration -->
+        <!-- DashboardComposeActivity (Jetpack Compose) -->
+        <activity
+            android:name=".DashboardComposeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ProyectoTitulo" />
+
+        <!-- Legacy DashboardActivity (Views) -->
         <activity
             android:name=".DashboardActivity"
             android:exported="false" />
 
-        <!-- HistoryActivity declaration -->
+        <!-- HistoryComposeActivity (Jetpack Compose) -->
+        <activity
+            android:name=".HistoryComposeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ProyectoTitulo" />
+
+        <!-- Legacy HistoryActivity (Views) -->
         <activity
             android:name=".HistoryActivity"
             android:exported="false" />

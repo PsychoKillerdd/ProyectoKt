@@ -504,6 +504,54 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+            <!-- Card Gráfico de Frecuencia Cardíaca -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="16dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="❤️ Frecuencia Cardíaca"
+                            android:textSize="16sp"
+                            android:textColor="#1A1A1A"
+                            android:textStyle="bold"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Hoy"
+                            android:textSize="12sp"
+                            android:textColor="#757575"/>
+
+                    </LinearLayout>
+
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/heartRateChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="200dp"/>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
             <!-- Card Mensaje IA -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"

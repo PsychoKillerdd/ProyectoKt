@@ -43,9 +43,13 @@ import androidx.health.connect.client.units.Length
 import androidx.health.connect.client.units.Mass
 import java.time.Duration
 import com.github.mikephil.charting.charts.BarChart
+import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.components.XAxis
@@ -114,6 +118,19 @@ class DashboardActivity : AppCompatActivity() {
             val intent = Intent(this, HistoryActivity::class.java)
             startActivity(intent)
         }
+        
+        // Long press en History para insertar datos de prueba
+        binding.buttonHistory.setOnLongClickListener {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Datos de Prueba")
+                .setMessage("¿Deseas insertar 20 registros de datos falsos pero realistas de los últimos 14 días?\n\nEsto es solo para pruebas.")
+                .setPositiveButton("Sí, insertar") { _, _ ->
+                    insertFakeHealthData()
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+            true
+        }
 
         binding.buttonLogout.setOnClickListener {
             firebaseAuth.signOut()
@@ -137,6 +154,9 @@ class DashboardActivity : AppCompatActivity() {
         
         // Cargar gráfico de sueño
         loadSleepChart()
+        
+        // Cargar gráfico de frecuencia cardíaca
+        loadHeartRateChart()
         
         // Cargar último mensaje de IA
         loadIaMessage()
@@ -715,8 +735,9 @@ class DashboardActivity : AppCompatActivity() {
                     "success"
                 )
                 
-                // Recargar gráfico de sueño
+                // Recargar gráficos
                 loadSleepChart()
+                loadHeartRateChart()
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Error al guardar: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -875,6 +896,123 @@ class DashboardActivity : AppCompatActivity() {
         Log.d(APP_TAG, "Sleep chart configured with ${entries.size} entries")
     }
     
+    // --- Heart Rate Chart Functions ---
+    
+    private fun loadHeartRateChart() {
+        val userId = firebaseAuth.currentUser?.uid ?: return
+        
+        // Obtener fecha de hoy
+        val today = LocalDate.now().toString()
+        
+        Log.d(APP_TAG, "Loading heart rate chart for today: $today")
+        
+        // Consultar Firebase para obtener todos los registros de hoy
+        firestore.collection("users").document(userId)
+            .collection("health_records")
+            .whereEqualTo("fecha", today)
+            .get()
+            .addOnSuccessListener { documents ->
+                Log.d(APP_TAG, "Fetched ${documents.size()} documents for today's heart rate chart")
+                
+                // Crear lista de mediciones con hora y frecuencia cardíaca
+                val heartRateData = mutableListOf<Pair<String, Double>>()
+                
+                for (document in documents) {
+                    val horaRegistro = document.getString("horaRegistro") ?: continue
+                    val heartRate = document.getDouble("frecuenciaCardiaca") ?: 0.0
+                    
+                    if (heartRate > 0.0) {
+                        heartRateData.add(Pair(horaRegistro, heartRate))
+                        Log.d(APP_TAG, "Heart rate at $horaRegistro: $heartRate bpm")
+                    }
+                }
+                
+                // Ordenar por hora
+                heartRateData.sortBy { it.first }
+                
+                Log.d(APP_TAG, "Sorted heart rate data: ${heartRateData.size} entries")
+                
+                if (heartRateData.isEmpty()) {
+                    // Si no hay datos hoy, mostrar gráfico vacío con mensaje
+                    setupLineChart(listOf(Entry(0f, 0f)), listOf("Sin datos hoy"))
+                    return@addOnSuccessListener
+                }
+                
+                // Crear entradas para el gráfico
+                val entries = mutableListOf<Entry>()
+                val timeLabels = mutableListOf<String>()
+                
+                for ((index, data) in heartRateData.withIndex()) {
+                    entries.add(Entry(index.toFloat(), data.second.toFloat()))
+                    timeLabels.add(data.first)  // Hora como etiqueta (ej: "08:30")
+                }
+                
+                Log.d(APP_TAG, "Chart entries created: ${entries.size}")
+                
+                // Configurar gráfico
+                setupLineChart(entries, timeLabels)
+            }
+            .addOnFailureListener { e ->
+                Log.e(APP_TAG, "Error loading heart rate data for chart", e)
+                // Mostrar gráfico vacío
+                setupLineChart(listOf(Entry(0f, 0f)), listOf("Error"))
+            }
+    }
+    
+    private fun setupLineChart(entries: List<Entry>, labels: List<String>) {
+        val lineChart = binding.heartRateChart
+        
+        // Crear dataset
+        val dataSet = LineDataSet(entries, "Frecuencia Cardíaca (bpm)")
+        dataSet.color = Color.parseColor("#E53935") // Rojo
+        dataSet.setCircleColor(Color.parseColor("#E53935"))
+        dataSet.lineWidth = 2.5f
+        dataSet.circleRadius = 4f
+        dataSet.setDrawCircleHole(true)
+        dataSet.circleHoleRadius = 2f
+        dataSet.setDrawValues(false) // No mostrar valores encima de la línea
+        dataSet.mode = LineDataSet.Mode.CUBIC_BEZIER // Línea suave
+        dataSet.setDrawFilled(true)
+        dataSet.fillColor = Color.parseColor("#FFCDD2") // Rojo claro para relleno
+        dataSet.fillAlpha = 100
+        
+        // Crear LineData
+        val lineData = LineData(dataSet)
+        
+        // Configurar el gráfico
+        lineChart.data = lineData
+        lineChart.description.isEnabled = false
+        lineChart.legend.isEnabled = true
+        lineChart.legend.textSize = 12f
+        
+        // Configurar eje X (fechas)
+        val xAxis = lineChart.xAxis
+        xAxis.valueFormatter = IndexAxisValueFormatter(labels)
+        xAxis.position = XAxis.XAxisPosition.BOTTOM
+        xAxis.granularity = 1f
+        xAxis.setDrawGridLines(false)
+        xAxis.textSize = 11f
+        
+        // Configurar eje Y izquierdo (bpm)
+        val leftAxis = lineChart.axisLeft
+        leftAxis.axisMinimum = 40f // Mínimo 40 bpm
+        leftAxis.axisMaximum = 150f // Máximo 150 bpm
+        leftAxis.granularity = 20f
+        leftAxis.textSize = 11f
+        leftAxis.setDrawGridLines(true)
+        
+        // Deshabilitar eje Y derecho
+        lineChart.axisRight.isEnabled = false
+        
+        // Configuraciones adicionales
+        lineChart.setTouchEnabled(true)
+        lineChart.setPinchZoom(false)
+        lineChart.animateX(1000)
+        lineChart.invalidate() // Refrescar el gráfico
+        
+        Log.d(APP_TAG, "Heart rate chart configured with ${entries.size} entries")
+    }
+    
     // --- IA Message Functions ---
     
     private fun loadIaMessage() {
@@ -954,6 +1092,182 @@ class DashboardActivity : AppCompatActivity() {
         }
         
         binding.textViewIaMessage.text = displayMessage
+    }
+    
+    /**
+     * Inserta 20 registros por día durante los últimos 14 días (280 registros totales)
+     * Simula los datos de una persona de 1.81m con variaciones naturales a diferentes horas
+     */
+    private fun insertFakeHealthData() {
+        val userId = firebaseAuth.currentUser?.uid ?: return
+        
+        Log.d(APP_TAG, "Starting to insert fake health data for user: $userId")
+        Toast.makeText(this, "⏳ Insertando 280 registros (20/día x 14 días)...", Toast.LENGTH_LONG).show()
+        
+        val calendar = java.util.Calendar.getInstance()
+        val random = java.util.Random()
+        
+        // Generar 20 registros por día durante 14 días = 280 registros
+        val recordsToInsert = mutableListOf<Map<String, Any>>()
+        val totalDays = 14
+        val recordsPerDay = 20
+        val totalRecords = totalDays * recordsPerDay
+        
+        // Datos base: persona de 1.81m
+        val altura = 1.81
+        val pesoBase = 75.0  // Peso base que variará ligeramente
+        
+        for (dayOffset in 0 until totalDays) {
+            // Configurar fecha base para este día
+            val baseCalendar = java.util.Calendar.getInstance()
+            baseCalendar.add(java.util.Calendar.DAY_OF_YEAR, -dayOffset)
+            
+            val isWeekend = baseCalendar.get(java.util.Calendar.DAY_OF_WEEK) in listOf(
+                java.util.Calendar.SATURDAY, 
+                java.util.Calendar.SUNDAY
+            )
+            
+            // Generar horas distribuidas a lo largo del día (6:00 - 23:00)
+            val hoursOfDay = mutableListOf<Int>()
+            for (h in 6..23) {
+                hoursOfDay.add(h)
+            }
+            hoursOfDay.shuffle(random)
+            val selectedHours = hoursOfDay.take(recordsPerDay).sorted()
+            
+            // Pasos acumulados durante el día
+            var accumulatedSteps = 0
+            val dailyStepGoal = if (isWeekend) random.nextInt(4000) + 5000 else random.nextInt(5000) + 7000
+            
+            for ((recordIndex, hour) in selectedHours.withIndex()) {
+                calendar.time = baseCalendar.time
+                calendar.set(java.util.Calendar.HOUR_OF_DAY, hour)
+                calendar.set(java.util.Calendar.MINUTE, random.nextInt(60))
+                calendar.set(java.util.Calendar.SECOND, random.nextInt(60))
+                
+                // Pasos: acumulados durante el día con más actividad en ciertas horas
+                val stepIncrement = when {
+                    hour in 7..9 -> random.nextInt(1500) + 500   // Mañana activa
+                    hour in 12..14 -> random.nextInt(1000) + 300  // Almuerzo
+                    hour in 17..20 -> random.nextInt(2000) + 800  // Tarde/ejercicio
+                    else -> random.nextInt(500) + 100             // Resto del día
+                }
+                accumulatedSteps += stepIncrement
+                val steps = minOf(accumulatedSteps, dailyStepGoal + random.nextInt(2000))
+                
+                // Frecuencia cardíaca: varía según hora y actividad
+                val baseHR = when {
+                    hour in 6..7 -> 58 + random.nextInt(8)     // Recién despierto
+                    hour in 8..11 -> 68 + random.nextInt(15)   // Mañana activa
+                    hour in 12..14 -> 72 + random.nextInt(12)  // Post-almuerzo
+                    hour in 15..17 -> 70 + random.nextInt(10)  // Tarde tranquila
+                    hour in 18..20 -> 75 + random.nextInt(25)  // Ejercicio/actividad
+                    hour in 21..23 -> 62 + random.nextInt(10)  // Relajación nocturna
+                    else -> 65 + random.nextInt(10)
+                }
+                val heartRate = baseHR
+                val heartRateMax = heartRate + random.nextInt(25) + 15
+                val heartRateMin = (heartRate - random.nextInt(12) - 8).coerceAtLeast(52)
+                
+                // Sueño: solo tiene valor significativo en registros de la mañana
+                val sleepHours = if (hour in 6..10 && recordIndex < 3) {
+                    5.5 + random.nextDouble() * 3.0  // 5.5 - 8.5 horas
+                } else {
+                    0.0  // Sin dato de sueño en otros momentos
+                }
+                
+                // SpO2: normalmente entre 95-99%, ligeramente menor si muy activo
+                val baseSpo2 = if (hour in 18..20 && random.nextBoolean()) 95.0 else 96.0
+                val spo2 = baseSpo2 + random.nextDouble() * 3.0
+                
+                // Estrés: basado en hora del día y si es fin de semana
+                val baseStress = when {
+                    isWeekend && hour in 10..20 -> 20 + random.nextInt(25)  // Relax fin de semana
+                    hour in 9..12 -> 35 + random.nextInt(30)                // Mañana laboral
+                    hour in 14..17 -> 40 + random.nextInt(35)               // Tarde laboral
+                    hour in 18..20 -> 30 + random.nextInt(25)               // Post-trabajo
+                    else -> 20 + random.nextInt(20)                          // Noche/mañana temprano
+                }
+                val stress = baseStress.coerceIn(10, 85)
+                
+                // Peso: varía ligeramente durante el día (±0.5kg)
+                val peso = pesoBase + (random.nextDouble() - 0.5)
+                
+                // Formato de fecha y hora
+                val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                val timeFormat = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                
+                val dataMap = mapOf(
+                    "pasosDiarios" to steps.toLong(),
+                    "horasDeSueño" to if (sleepHours > 0) String.format("%.1f", sleepHours).replace(",", ".").toDouble() else 0.0,
+                    "saturacionOxigeno" to String.format("%.1f", spo2).replace(",", ".").toDouble(),
+                    "frecuenciaCardiaca" to heartRate.toLong(),
+                    "frecuenciaCardiacaMax" to heartRateMax.toLong(),
+                    "frecuenciaCardiacaMin" to heartRateMin.toLong(),
+                    "relojColocado" to true,
+                    "nivelDeEstres" to stress,
+                    "horaRegistro" to timeFormat.format(calendar.time),
+                    "fecha" to dateFormat.format(calendar.time),
+                    "peso" to String.format("%.1f", peso).replace(",", ".").toDouble(),
+                    "altura" to altura,
+                    "lastUpdated" to calendar.time
+                )
+                
+                recordsToInsert.add(dataMap)
+            }
+        }
+        
+        Log.d(APP_TAG, "Generated ${recordsToInsert.size} fake records to insert")
+        
+        // Insertar todos los registros en Firebase
+        var successCount = 0
+        var errorCount = 0
+        
+        for ((index, dataMap) in recordsToInsert.withIndex()) {
+            val fecha = dataMap["fecha"] as String
+            val horaRegistro = dataMap["horaRegistro"] as String
+            val timestamp = (dataMap["lastUpdated"] as java.util.Date).time
+            val documentId = "${fecha}_${horaRegistro.replace(":", "")}_${timestamp}_fake"
+            
+            firestore.collection("users").document(userId)
+                .collection("health_records").document(documentId)
+                .set(dataMap)
+                .addOnSuccessListener {
+                    successCount++
+                    if (successCount % 50 == 0) {
+                        Log.d(APP_TAG, "Progress: $successCount/$totalRecords records inserted")
+                    }
+                    
+                    if (successCount + errorCount == totalRecords) {
+                        Toast.makeText(
+                            this,
+                            "✅ $successCount registros insertados (14 días x 20/día)",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        
+                        // Recargar gráficos y UI
+                        loadSleepChart()
+                        loadHeartRateChart()
+                    }
+                }
+                .addOnFailureListener { e ->
+                    errorCount++
+                    Log.e(APP_TAG, "Error inserting record ${index + 1}: ${e.message}")
+                    
+                    if (successCount + errorCount == totalRecords) {
+                        Toast.makeText(
+                            this,
+                            "⚠️ Insertados: $successCount exitosos, $errorCount errores",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        
+                        loadSleepChart()
+                        loadHeartRateChart()
+                    }
+                }
+        }
+        
+        Log.d(APP_TAG, "Started inserting $totalRecords fake health records")
     }
 }
 

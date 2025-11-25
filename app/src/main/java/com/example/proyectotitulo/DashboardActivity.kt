@@ -126,6 +126,9 @@ class DashboardActivity : AppCompatActivity() {
         // Cargar mensajes de ejemplo
         loadSampleMessages()
         
+        // Inicializar UI Samsung
+        initSamsungUI()
+        
         // Solicitar permisos de notificaciones (Android 13+)
         requestNotificationPermission()
         
@@ -137,6 +140,27 @@ class DashboardActivity : AppCompatActivity() {
         
         // Cargar último mensaje de IA
         loadIaMessage()
+    }
+    
+    private fun initSamsungUI() {
+        // Saludo inicial según hora del día
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        val greeting = when {
+            hour < 12 -> "Buenos días ☀️"
+            hour < 19 -> "Buenas tardes 🌤️"
+            else -> "Buenas noches 🌙"
+        }
+        binding.textViewGreeting.text = greeting
+        
+        // Fecha actual
+        val dateFormat = java.text.SimpleDateFormat("d 'de' MMMM", java.util.Locale("es", "ES"))
+        binding.textViewDate.text = dateFormat.format(java.util.Date())
+        
+        // Estado inicial del reloj
+        binding.textViewWatchStatus.text = "Presiona actualizar para sincronizar"
+        binding.viewWatchIndicator.setBackgroundResource(R.drawable.circle_indicator_gray)
+        
+        Log.d(APP_TAG, "Samsung UI initialized")
     }
 
     private fun requestNotificationPermission() {
@@ -173,8 +197,8 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun loadSampleMessages() {
-        // Mensaje de bienvenida
-        binding.textViewNotifications.text = "Bienvenido\n\nPresiona 'Actualizar' para recopilar tus datos de salud.\n\n📊 Recibirás recordatorios cada 2 horas (8 AM - 12 AM). La última notificación te recordará colocarte el reloj."
+        // Mensaje de bienvenida para el diseño Samsung
+        binding.textViewNotifications.text = "Toca el botón de sincronización para actualizar tus datos de salud. Recibirás recordatorios cada 2 horas."
     }
 
     private fun addMessage(title: String, message: String, type: String = "info") {
@@ -368,11 +392,97 @@ class DashboardActivity : AppCompatActivity() {
                 appendLine("═══════════════════════════════")
             }
             
-            binding.textViewHealthData.text = uiText
+            // Actualizar UI del nuevo diseño Samsung
+            updateSamsungUI(healthData, avgHeartRate)
             
             // Guardar en Firebase (siempre guarda, incluso con valores 0)
             saveHealthDataToFirebase(healthData)
         }
+    }
+    
+    private fun updateSamsungUI(healthData: HealthData, avgHeartRate: Long) {
+        // Actualizar saludo según hora del día
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        val greeting = when {
+            hour < 12 -> "Buenos días ☀️"
+            hour < 19 -> "Buenas tardes 🌤️"
+            else -> "Buenas noches 🌙"
+        }
+        binding.textViewGreeting.text = greeting
+        
+        // Actualizar fecha
+        val dateFormat = java.text.SimpleDateFormat("d 'de' MMMM", java.util.Locale("es", "ES"))
+        binding.textViewDate.text = dateFormat.format(java.util.Date())
+        
+        // Actualizar tarjetas de métricas
+        // Pasos
+        binding.textViewSteps.text = if (healthData.pasosDiarios > 0) {
+            java.text.NumberFormat.getNumberInstance().format(healthData.pasosDiarios)
+        } else "--"
+        
+        // Frecuencia cardíaca
+        binding.textViewHeartRate.text = if (healthData.frecuenciaCardiaca > 0) {
+            healthData.frecuenciaCardiaca.toString()
+        } else "--"
+        
+        // Estado del ritmo cardíaco
+        binding.textViewHeartRateStatus.text = when {
+            healthData.frecuenciaCardiaca <= 0 -> "Sin datos"
+            healthData.frecuenciaCardiaca < 60 -> "Bajo"
+            healthData.frecuenciaCardiaca <= 100 -> "Normal"
+            else -> "Elevado"
+        }
+        
+        // Sueño
+        binding.textViewSleep.text = if (healthData.horasDeSueño > 0) {
+            "%.1f".format(healthData.horasDeSueño)
+        } else "--"
+        
+        binding.textViewSleepStatus.text = when {
+            healthData.horasDeSueño <= 0 -> "Sin datos"
+            healthData.horasDeSueño < 6 -> "Poco sueño"
+            healthData.horasDeSueño <= 8 -> "Buen descanso"
+            else -> "Excelente"
+        }
+        
+        // SpO2
+        binding.textViewSpO2.text = if (healthData.saturacionOxigeno > 0) {
+            "%.0f".format(healthData.saturacionOxigeno)
+        } else "--"
+        
+        binding.textViewSpO2Status.text = when {
+            healthData.saturacionOxigeno <= 0 -> "Sin datos"
+            healthData.saturacionOxigeno < 95 -> "Bajo ⚠️"
+            else -> "Normal"
+        }
+        
+        // Estrés
+        binding.textViewStress.text = if (healthData.nivelDeEstres > 0) {
+            healthData.nivelDeEstres.toString()
+        } else "--"
+        
+        binding.textViewStressLabel.text = when {
+            healthData.nivelDeEstres <= 0 -> "Sin datos"
+            healthData.nivelDeEstres <= 30 -> "Relajado 😌"
+            healthData.nivelDeEstres <= 60 -> "Normal 🙂"
+            healthData.nivelDeEstres <= 80 -> "Elevado 😐"
+            else -> "Alto 😰"
+        }
+        
+        // Estado del reloj
+        if (healthData.relojColocado) {
+            binding.textViewWatchStatus.text = "Reloj conectado y sincronizado"
+            binding.viewWatchIndicator.setBackgroundResource(R.drawable.circle_indicator_green)
+        } else {
+            binding.textViewWatchStatus.text = "Coloca tu reloj para obtener datos"
+            binding.viewWatchIndicator.setBackgroundResource(R.drawable.circle_indicator_red)
+        }
+        
+        // Última actualización
+        val timeFormat = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+        binding.textViewLastUpdate.text = "Última actualización: ${timeFormat.format(java.util.Date())}"
+        
+        Log.d(APP_TAG, "Samsung UI updated successfully")
     }
 
     private suspend fun readSteps(startTime: Instant, endTime: Instant): Long {

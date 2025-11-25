@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    tools:context=".DashboardActivity">
+
+    <!-- Header estilo Facebook -->
+    <LinearLayout
+        android:id="@+id/headerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#1877F2"
+        android:elevation="4dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="12dp"
+        android:paddingHorizontal="16dp">
+
+        <!-- Título y botones en una línea -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="HealthTrack"
+                android:textSize="24sp"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"/>
+
+            <ImageButton
+                android:id="@+id/buttonUpdate"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_popup_sync"
+                android:tint="@android:color/white"
+                android:padding="8dp"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Actualizar"/>
+
+            <ImageButton
+                android:id="@+id/buttonHistory"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_my_calendar"
+                android:tint="@android:color/white"
+                android:padding="8dp"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Historial"/>
+
+            <ImageButton
+                android:id="@+id/buttonLogout"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_lock_power_off"
+                android:tint="@android:color/white"
+                android:padding="8dp"
+                android:contentDescription="Salir"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- ScrollView estilo Feed -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="false"
+        android:background="#F0F2F5">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="8dp"
+            android:paddingBottom="16dp">
+
+            <!-- Stats rápidas horizontales (estilo Stories) -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:paddingVertical="8dp"
+                android:paddingHorizontal="12dp">
+
+                <LinearLayout
+                    android:id="@+id/statsContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <!-- Stats se agregarán dinámicamente -->
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- Card principal de salud (estilo Post) -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="0dp"
+                android:layout_marginVertical="4dp"
+                app:cardCornerRadius="0dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Header estilo Facebook Post -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="12dp"
+                        android:gravity="center_vertical">
+
+                        <!-- Avatar circular -->
+                        <View
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@drawable/circle_blue"
+                            android:layout_marginEnd="12dp"/>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Tus Datos de Salud"
+                                android:textSize="15sp"
+                                android:textColor="#050505"
+                                android:textStyle="bold"/>
+
+                            <TextView
+                                android:id="@+id/textViewLastUpdate"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Hace unos momentos"
+                                android:textSize="13sp"
+                                android:textColor="#65676B"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#E4E6EB"/>
+
+                    <!-- Contenido de salud -->
+                    <TextView
+                        android:id="@+id/textViewHealthData"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Cargando datos de salud..."
+                        android:textSize="14sp"
+                        android:textColor="#050505"
+                        android:lineSpacingExtra="4dp"
+                        android:padding="16dp"/>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Card de notificaciones (estilo Post) -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="0dp"
+                android:layout_marginVertical="4dp"
+                app:cardCornerRadius="0dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Header -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="12dp"
+                        android:gravity="center_vertical">
+
+                        <View
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@drawable/circle_red"
+                            android:layout_marginEnd="12dp"/>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Notificaciones"
+                            android:textSize="15sp"
+                            android:textColor="#050505"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#E4E6EB"/>
+
+                    <!-- Contenido de notificaciones -->
+                    <TextView
+                        android:id="@+id/textViewNotifications"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No hay notificaciones pendientes"
+                        android:textSize="14sp"
+                        android:textColor="#65676B"
+                        android:lineSpacingExtra="4dp"
+                        android:padding="16dp"/>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Card de Gráfico de Sueño (estilo Post) -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="0dp"
+                android:layout_marginVertical="4dp"
+                app:cardCornerRadius="0dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Header -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="12dp"
+                        android:gravity="center_vertical">
+
+                        <View
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@drawable/circle_blue"
+                            android:layout_marginEnd="12dp"/>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Análisis de Sueño"
+                            android:textSize="15sp"
+                            android:textColor="#050505"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#E4E6EB"/>
+
+                    <!-- Subtítulo -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Últimos 5 días"
+                        android:textSize="13sp"
+                        android:textColor="#65676B"
+                        android:paddingHorizontal="16dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="8dp"/>
+
+                    <!-- Gráfico de Barras -->
+                    <com.github.mikephil.charting.charts.BarChart
+                        android:id="@+id/sleepBarChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="250dp"
+                        android:layout_marginHorizontal="8dp"
+                        android:layout_marginBottom="16dp"/>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Card de Mensaje IA (estilo Post) -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="0dp"
+                android:layout_marginVertical="4dp"
+                app:cardCornerRadius="0dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Header -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="12dp"
+                        android:gravity="center_vertical">
+
+                        <View
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@drawable/circle_blue"
+                            android:layout_marginEnd="12dp"/>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="🤖 Análisis IA"
+                            android:textSize="15sp"
+                            android:textColor="#050505"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#E4E6EB"/>
+
+                    <!-- Contenido del mensaje IA -->
+                    <TextView
+                        android:id="@+id/textViewIaMessage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Cargando análisis..."
+                        android:textSize="14sp"
+                        android:textColor="#65676B"
+                        android:lineSpacingExtra="4dp"
+                        android:padding="16dp"/>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

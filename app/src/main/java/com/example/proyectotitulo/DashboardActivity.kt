@@ -134,6 +134,9 @@ class DashboardActivity : AppCompatActivity() {
         
         // Cargar gráfico de sueño
         loadSleepChart()
+        
+        // Cargar último mensaje de IA
+        loadIaMessage()
     }
 
     private fun requestNotificationPermission() {
@@ -760,6 +763,87 @@ class DashboardActivity : AppCompatActivity() {
         barChart.invalidate() // Refrescar el gráfico
         
         Log.d(APP_TAG, "Sleep chart configured with ${entries.size} entries")
+    }
+    
+    // --- IA Message Functions ---
+    
+    private fun loadIaMessage() {
+        val userId = firebaseAuth.currentUser?.uid
+        if (userId == null) {
+            Log.e(APP_TAG, "User not authenticated, cannot load IA message")
+            binding.textViewIaMessage.text = "Inicia sesión para ver el análisis de IA"
+            return
+        }
+        
+        Log.d(APP_TAG, "Loading last IA message for user: $userId")
+        
+        // OPCIÓN 1: Leer desde users/{userId}/messagesIa (subcolección del usuario)
+        firestore.collection("users").document(userId)
+            .collection("messagesIa")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .limit(1)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (documents.isEmpty) {
+                    Log.d(APP_TAG, "No IA messages found in users/$userId/messagesIa")
+                    
+                    // OPCIÓN 2: Si no hay en subcolección, intentar desde raíz messagesIa
+                    tryLoadFromRootCollection(userId)
+                } else {
+                    displayIaMessage(documents.documents[0])
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e(APP_TAG, "Error loading from subcollection: ${e.message}")
+                // Si falla la subcolección, intentar desde raíz
+                tryLoadFromRootCollection(userId)
+            }
+    }
+    
+    private fun tryLoadFromRootCollection(userId: String) {
+        Log.d(APP_TAG, "Trying to load from root messagesIa collection")
+        
+        firestore.collection("messagesIa")
+            .whereEqualTo("userId", userId)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (documents.isEmpty) {
+                    Log.d(APP_TAG, "No IA messages found for userId: $userId")
+                    binding.textViewIaMessage.text = "📊 Aún no hay análisis disponible. Los mensajes de IA aparecerán aquí cuando estén listos."
+                } else {
+                    // Ordenar por timestamp en el cliente
+                    val sortedDocs = documents.sortedByDescending { 
+                        it.getTimestamp("timestamp")?.toDate()?.time ?: 0 
+                    }
+                    
+                    Log.d(APP_TAG, "Found ${documents.size()} messages, displaying most recent")
+                    sortedDocs.firstOrNull()?.let { displayIaMessage(it) }
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e(APP_TAG, "Error loading from root collection: ${e.message}", e)
+                binding.textViewIaMessage.text = "⚠️ Error al cargar el análisis de IA: ${e.message}"
+            }
+    }
+    
+    private fun displayIaMessage(document: com.google.firebase.firestore.DocumentSnapshot) {
+        val message = document.getString("mensaje") ?: document.getString("message") ?: "Sin mensaje"
+        val timestamp = document.getTimestamp("timestamp")
+        
+        Log.d(APP_TAG, "IA message loaded successfully")
+        Log.d(APP_TAG, "Document ID: ${document.id}")
+        Log.d(APP_TAG, "Message length: ${message.length} characters")
+        Log.d(APP_TAG, "Message preview: ${message.take(100)}...")
+        
+        // Formatear el mensaje con timestamp si existe
+        val displayMessage = if (timestamp != null) {
+            val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
+            "📅 ${dateFormat.format(timestamp.toDate())}\n\n$message"
+        } else {
+            message
+        }
+        
+        binding.textViewIaMessage.text = displayMessage
     }
 }
 

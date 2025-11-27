@@ -157,11 +157,13 @@ fun ChartCard(
 }
 
 /**
- * Card para IA - shadcn style con borde
+ * Card para IA - shadcn style con borde y botón de análisis
  */
 @Composable
 fun AIMessageCard(
     message: String,
+    onAnalyzeClick: (() -> Unit)? = null,
+    isAnalyzing: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -181,16 +183,58 @@ fun AIMessageCard(
                 .padding(20.dp)
         ) {
             Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "✨", fontSize = 18.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Análisis de IA",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
-                    color = TextPrimary
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "✨", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Análisis de IA",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = TextPrimary
+                    )
+                }
+                
+                // Botón de análisis
+                if (onAnalyzeClick != null) {
+                    Button(
+                        onClick = onAnalyzeClick,
+                        enabled = !isAnalyzing,
+                        modifier = Modifier.height(32.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Primary,
+                            disabledContainerColor = Primary.copy(alpha = 0.5f)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                    ) {
+                        if (isAnalyzing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Analizando...",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium
+                            )
+                        } else {
+                            Text(
+                                text = "🔮 Analizar",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
             }
             
             Spacer(modifier = Modifier.height(12.dp))

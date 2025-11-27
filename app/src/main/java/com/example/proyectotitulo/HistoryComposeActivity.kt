@@ -60,19 +60,20 @@ class HistoryComposeActivity : ComponentActivity() {
         firestore.collection("users").document(userId)
             .collection("health_records")
             .orderBy("lastUpdated", Query.Direction.DESCENDING)
-            .limit(50)
+            .limit(20) // Últimos 20 registros
             .get()
             .addOnSuccessListener { documents ->
                 val records = documents.mapNotNull { doc ->
                     try {
                         val pasos = doc.getLong("pasosDiarios") ?: 0
                         val hr = doc.getLong("frecuenciaCardiaca") ?: 0
-                        val sleep = doc.getDouble("horasDeSueño") ?: 0.0
+                        val sleep = doc.getDouble("horasDeSueno") ?: doc.getDouble("horasDeSueño") ?: 0.0
                         val spo2 = doc.getDouble("saturacionOxigeno") ?: 0.0
                         val stress = (doc.getLong("nivelDeEstres") ?: 0).toInt()
+                        val relojColocado = doc.getBoolean("relojColocado") ?: false
                         
-                        // Filtrar registros con todos los valores en 0
-                        if (pasos == 0L && hr == 0L && sleep == 0.0 && spo2 == 0.0 && stress == 0) {
+                        // Solo filtrar registros donde el reloj no estaba colocado Y todo está en 0
+                        if (!relojColocado && pasos == 0L && hr == 0L && sleep == 0.0) {
                             return@mapNotNull null
                         }
                         
@@ -92,14 +93,13 @@ class HistoryComposeActivity : ComponentActivity() {
                     }
                 }
                 
-                // Agrupar por fecha y tomar el más reciente de cada día
-                val uniqueByDate = records
-                    .groupBy { it.fecha }
-                    .map { (_, dayRecords) -> dayRecords.maxByOrNull { it.horaRegistro } }
-                    .filterNotNull()
-                    .take(10)
+                // Mostrar TODOS los registros válidos, ordenados por fecha y hora
+                val sortedRecords = records
+                    .sortedWith(compareByDescending<HistoryRecord> { it.fecha }
+                        .thenByDescending { it.horaRegistro })
                 
-                onResult(uniqueByDate)
+                Log.d(TAG, "Loaded ${sortedRecords.size} history records")
+                onResult(sortedRecords)
             }
             .addOnFailureListener { e ->
                 Log.e(TAG, "Error loading history", e)

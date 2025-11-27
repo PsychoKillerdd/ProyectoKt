@@ -15,6 +15,8 @@ import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.*
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import com.example.proyectotitulo.api.HealthApiClient
+import com.example.proyectotitulo.api.UserRequest
 import com.example.proyectotitulo.ui.screens.DashboardScreen
 import com.example.proyectotitulo.ui.screens.HealthData
 import com.example.proyectotitulo.ui.theme.HealthTrackTheme
@@ -61,8 +63,9 @@ class DashboardComposeActivity : ComponentActivity() {
                 var healthData by remember { mutableStateOf(HealthData()) }
                 var heartRateChartData by remember { mutableStateOf<List<Pair<String, Float>>>(emptyList()) }
                 var sleepChartData by remember { mutableStateOf<List<Pair<String, Float>>>(emptyList()) }
-                var iaMessage by remember { mutableStateOf("📊 Cargando análisis de IA...") }
+                var iaMessage by remember { mutableStateOf("📊 Presiona 'Analizar' para obtener recomendaciones personalizadas de IA.") }
                 var isLoading by remember { mutableStateOf(false) }
+                var isAnalyzing by remember { mutableStateOf(false) }
                 
                 // Cargar datos al iniciar
                 LaunchedEffect(Unit) {
@@ -98,7 +101,15 @@ class DashboardComposeActivity : ComponentActivity() {
                         startActivity(Intent(this, LoginComposeActivity::class.java))
                         finish()
                     },
-                    isLoading = isLoading
+                    onAnalyzeClick = {
+                        isAnalyzing = true
+                        analyzeWithIA { message ->
+                            iaMessage = message
+                            isAnalyzing = false
+                        }
+                    },
+                    isLoading = isLoading,
+                    isAnalyzing = isAnalyzing
                 )
             }
         }
@@ -140,7 +151,7 @@ class DashboardComposeActivity : ComponentActivity() {
                         heartRate = doc.getLong("frecuenciaCardiaca") ?: 0,
                         heartRateMin = doc.getLong("frecuenciaCardiacaMin") ?: 0,
                         heartRateMax = doc.getLong("frecuenciaCardiacaMax") ?: 0,
-                        sleepHours = doc.getDouble("horasDeSueño") ?: 0.0,
+                        sleepHours = doc.getDouble("horasDeSueno") ?: doc.getDouble("horasDeSueño") ?: 0.0,
                         spO2 = doc.getDouble("saturacionOxigeno") ?: 0.0,
                         stressLevel = (doc.getLong("nivelDeEstres") ?: 0).toInt(),
                         isWatchConnected = doc.getBoolean("relojColocado") ?: false
@@ -210,7 +221,7 @@ class DashboardComposeActivity : ComponentActivity() {
                 
                 for (doc in documents) {
                     val fecha = doc.getString("fecha") ?: continue
-                    val sleep = doc.getDouble("horasDeSueño") ?: 0.0
+                    val sleep = doc.getDouble("horasDeSueno") ?: doc.getDouble("horasDeSueño") ?: 0.0
                     
                     if (dates.contains(fecha) && sleep > 0) {
                         sleepByDate.getOrPut(fecha) { mutableListOf() }.add(sleep)
@@ -258,7 +269,10 @@ class DashboardComposeActivity : ComponentActivity() {
             try {
                 val client = healthConnectClient
                 if (client == null) {
-                    Toast.makeText(this@DashboardComposeActivity, "Health Connect no disponible", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@DashboardComposeActivity, "Health Connect no disponible - Insertando datos de prueba...", Toast.LENGTH_SHORT).show()
+                    insertTestData()
+                    // Esperar un momento para que los datos se guarden
+                    kotlinx.coroutines.delay(1000)
                     loadHealthDataFromFirebase { data, hr, sleep, _ -> onResult(data, hr, sleep) }
                     return@launch
                 }
@@ -266,7 +280,9 @@ class DashboardComposeActivity : ComponentActivity() {
                 // Verificar permisos
                 val granted = client.permissionController.getGrantedPermissions()
                 if (!granted.containsAll(healthPermissions)) {
-                    Toast.makeText(this@DashboardComposeActivity, "Permisos no concedidos", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@DashboardComposeActivity, "Permisos no concedidos - Insertando datos de prueba...", Toast.LENGTH_SHORT).show()
+                    insertTestData()
+                    kotlinx.coroutines.delay(1000)
                     loadHealthDataFromFirebase { data, hr, sleep, _ -> onResult(data, hr, sleep) }
                     return@launch
                 }
@@ -361,7 +377,7 @@ class DashboardComposeActivity : ComponentActivity() {
             "frecuenciaCardiaca" to data.heartRate,
             "frecuenciaCardiacaMin" to data.heartRateMin,
             "frecuenciaCardiacaMax" to data.heartRateMax,
-            "horasDeSueño" to data.sleepHours,
+            "horasDeSueno" to data.sleepHours,
             "saturacionOxigeno" to data.spO2,
             "nivelDeEstres" to data.stressLevel,
             "relojColocado" to data.isWatchConnected,
@@ -380,5 +396,130 @@ class DashboardComposeActivity : ComponentActivity() {
             .addOnFailureListener { e ->
                 Log.e(TAG, "Error saving health data", e)
             }
+    }
+    
+    /**
+     * Llama a la API de análisis de IA
+     */
+    private fun analyzeWithIA(onResult: (String) -> Unit) {
+        val userId = firebaseAuth.currentUser?.uid
+        
+        if (userId == null) {
+            onResult("❌ Error: Usuario no autenticado")
+            return
+        }
+        
+        lifecycleScope.launch {
+            try {
+                Log.d(TAG, "Llamando API de análisis para usuario: $userId")
+                
+                val response = HealthApiClient.api.procesarUsuario(
+                    UserRequest(user_id = userId)
+                )
+                
+                Log.d(TAG, "Respuesta API - Estado: ${response.estado_general}")
+                Log.d(TAG, "Mensaje: ${response.mensaje}")
+                
+                // Mostrar el mensaje de IA
+                onResult(response.mensaje)
+                
+                Toast.makeText(
+                    this@DashboardComposeActivity,
+                    "✅ Análisis completado",
+                    Toast.LENGTH_SHORT
+                ).show()
+                
+            } catch (e: retrofit2.HttpException) {
+                val errorBody = e.response()?.errorBody()?.string()
+                Log.e(TAG, "Error HTTP ${e.code()}: $errorBody", e)
+                
+                val errorMessage = when (e.code()) {
+                    404 -> "❌ No hay registros de salud para analizar. Sincroniza tus datos primero."
+                    500 -> "❌ Error en el servidor. Intenta más tarde."
+                    else -> "❌ Error: ${e.message()}"
+                }
+                onResult(errorMessage)
+                
+            } catch (e: java.net.UnknownHostException) {
+                Log.e(TAG, "Error de conexión", e)
+                onResult("❌ Sin conexión a internet. Verifica tu conexión.")
+                
+            } catch (e: java.net.SocketTimeoutException) {
+                Log.e(TAG, "Timeout", e)
+                onResult("❌ Tiempo de espera agotado. El servidor está tardando demasiado.")
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "Error inesperado", e)
+                onResult("❌ Error: ${e.message ?: "Error desconocido"}")
+            }
+        }
+    }
+    
+    /**
+     * Inserta datos de prueba para el día actual
+     * Útil para testing cuando no hay reloj conectado
+     */
+    fun insertTestData() {
+        val userId = firebaseAuth.currentUser?.uid ?: return
+        val today = LocalDate.now().toString()
+        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+        
+        // Datos de prueba realistas
+        val testRecords = listOf(
+            mapOf(
+                "pasosDiarios" to 8542L,
+                "frecuenciaCardiaca" to 72L,
+                "frecuenciaCardiacaMin" to 58L,
+                "frecuenciaCardiacaMax" to 95L,
+                "horasDeSueño" to 7.5,
+                "saturacionOxigeno" to 98.0,
+                "nivelDeEstres" to 35,
+                "relojColocado" to true,
+                "fecha" to today,
+                "horaRegistro" to "08:30",
+                "lastUpdated" to Date()
+            ),
+            mapOf(
+                "pasosDiarios" to 12350L,
+                "frecuenciaCardiaca" to 78L,
+                "frecuenciaCardiacaMin" to 62L,
+                "frecuenciaCardiacaMax" to 110L,
+                "horasDeSueño" to 7.5,
+                "saturacionOxigeno" to 97.0,
+                "nivelDeEstres" to 42,
+                "relojColocado" to true,
+                "fecha" to today,
+                "horaRegistro" to "14:00",
+                "lastUpdated" to Date()
+            ),
+            mapOf(
+                "pasosDiarios" to 15230L,
+                "frecuenciaCardiaca" to 68L,
+                "frecuenciaCardiacaMin" to 55L,
+                "frecuenciaCardiacaMax" to 105L,
+                "horasDeSueño" to 7.5,
+                "saturacionOxigeno" to 99.0,
+                "nivelDeEstres" to 28,
+                "relojColocado" to true,
+                "fecha" to today,
+                "horaRegistro" to timeFormat.format(Date()),
+                "lastUpdated" to Date()
+            )
+        )
+        
+        testRecords.forEachIndexed { index, record ->
+            val docId = "${today}_test_${System.currentTimeMillis()}_$index"
+            firestore.collection("users").document(userId)
+                .collection("health_records").document(docId)
+                .set(record)
+                .addOnSuccessListener {
+                    Log.d(TAG, "Test data $index saved")
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Error saving test data $index", e)
+                }
+        }
+        
+        Toast.makeText(this, "✅ Datos de prueba insertados", Toast.LENGTH_SHORT).show()
     }
 }

@@ -2,6 +2,6 @@
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/white"/>
     <foreground>
-        <inset android:drawable="@drawable/logo" android:inset="25%"/>
+        <inset android:drawable="@drawable/samsunghealth" android:inset="20%"/>
     </foreground>
 </adaptive-icon>

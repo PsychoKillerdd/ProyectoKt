@@ -60,7 +60,7 @@ fun LoginScreen(
         ) {
             Spacer(modifier = Modifier.height(60.dp))
             
-            // Logo Samsung Health
+            // Logo de la app
             Image(
                 painter = painterResource(id = R.drawable.samsunghealth),
                 contentDescription = "Logo HealthTrack",
@@ -137,7 +137,10 @@ fun LoginScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = BorderFocus,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            cursorColor = Primary,
+                            focusedBorderColor = Primary,
                             unfocusedBorderColor = Border,
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent
@@ -175,7 +178,10 @@ fun LoginScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = BorderFocus,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            cursorColor = Primary,
+                            focusedBorderColor = Primary,
                             unfocusedBorderColor = Border,
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent

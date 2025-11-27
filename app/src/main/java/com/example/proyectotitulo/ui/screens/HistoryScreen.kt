@@ -1,21 +1,17 @@
 package com.example.proyectotitulo.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,13 +41,17 @@ fun HistoryScreen(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Agrupar registros por fecha
+    val groupedRecords = records.groupBy { it.fecha }
+        .toSortedMap(reverseOrder())
+    
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { 
                     Text(
-                        "📋 Historial de Salud",
-                        fontWeight = FontWeight.Bold
+                        "Historial",
+                        fontWeight = FontWeight.SemiBold
                     ) 
                 },
                 navigationIcon = {
@@ -63,9 +63,9 @@ fun HistoryScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Primary,
-                    titleContentColor = OnPrimary,
-                    navigationIconContentColor = OnPrimary
+                    containerColor = Background,
+                    titleContentColor = TextPrimary,
+                    navigationIconContentColor = TextPrimary
                 )
             )
         }
@@ -74,11 +74,7 @@ fun HistoryScreen(
             modifier = modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color(0xFFF5F5F5), Color(0xFFFFFFFF))
-                    )
-                )
+                .background(Background)
         ) {
             when {
                 isLoading -> {
@@ -86,7 +82,10 @@ fun HistoryScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = Primary)
+                        CircularProgressIndicator(
+                            color = Primary,
+                            strokeWidth = 2.dp
+                        )
                     }
                 }
                 records.isEmpty() -> {
@@ -96,24 +95,39 @@ fun HistoryScreen(
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         item {
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Últimos ${records.size} registros",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = OnSurfaceVariant,
+                                text = "${records.size} registros encontrados",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextTertiary,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
                         }
                         
-                        items(records) { record ->
-                            HistoryRecordCard(record = record)
+                        groupedRecords.forEach { (fecha, dayRecords) ->
+                            // Header del día
+                            item {
+                                Text(
+                                    text = formatDate(fecha),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TextPrimary,
+                                    modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)
+                                )
+                            }
+                            
+                            // Registros del día
+                            items(dayRecords.sortedByDescending { it.horaRegistro }) { record ->
+                                HistoryRecordCard(record = record)
+                            }
                         }
                         
                         item {
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(24.dp))
                         }
                     }
                 }
@@ -128,43 +142,41 @@ fun HistoryRecordCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .border(1.dp, Border, RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = CardBackground),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Header con fecha y hora
+            // Hora del registro
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(Primary.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
+                Text(
+                    text = "🕐 ${record.horaRegistro}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary,
+                    fontWeight = FontWeight.Medium
+                )
+                // Badge de estado
+                if (record.frecuenciaCardiaca > 0 || record.spo2 > 0) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = Success.copy(alpha = 0.1f)
                     ) {
-                        Text(text = "📅", fontSize = 18.sp)
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
                         Text(
-                            text = formatDate(record.fecha),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "🕐 ${record.horaRegistro}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = OnSurfaceVariant
+                            text = "✓ Completo",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Success,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                         )
                     }
                 }
@@ -172,61 +184,66 @@ fun HistoryRecordCard(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            HorizontalDivider(color = SurfaceVariant)
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Grid de métricas 2x3
+            // Grid de métricas - 5 columnas compactas
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                MetricItem(
+                CompactMetricItem(
                     icon = "👟",
-                    label = "Pasos",
                     value = formatNumber(record.pasos),
-                    color = StepsAccent,
-                    modifier = Modifier.weight(1f)
+                    label = "pasos"
                 )
-                MetricItem(
+                CompactMetricItem(
                     icon = "❤️",
-                    label = "Cardíaco",
-                    value = "${record.frecuenciaCardiaca} bpm",
-                    color = HeartRateAccent,
-                    modifier = Modifier.weight(1f)
+                    value = "${record.frecuenciaCardiaca}",
+                    label = "bpm"
                 )
-                MetricItem(
+                CompactMetricItem(
                     icon = "😴",
-                    label = "Sueño",
-                    value = String.format("%.1fh", record.horasSueno),
-                    color = SleepAccent,
-                    modifier = Modifier.weight(1f)
+                    value = String.format("%.1f", record.horasSueno),
+                    label = "hrs"
                 )
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                MetricItem(
+                CompactMetricItem(
                     icon = "💨",
-                    label = "SpO2",
-                    value = String.format("%.0f%%", record.spo2),
-                    color = SpO2Accent,
-                    modifier = Modifier.weight(1f)
+                    value = if (record.spo2 > 0) String.format("%.0f", record.spo2) else "-",
+                    label = "SpO2"
                 )
-                MetricItem(
+                CompactMetricItem(
                     icon = "🧘",
-                    label = "Estrés",
-                    value = "${record.estres}",
-                    color = StressAccent,
-                    modifier = Modifier.weight(1f)
+                    value = if (record.estres > 0) "${record.estres}" else "-",
+                    label = "estrés"
                 )
-                Spacer(modifier = Modifier.weight(1f))
             }
         }
+    }
+}
+
+@Composable
+fun CompactMetricItem(
+    icon: String,
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = icon, fontSize = 16.sp)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = TextPrimary
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = TextTertiary,
+            fontSize = 10.sp
+        )
     }
 }
 
@@ -235,25 +252,24 @@ fun MetricItem(
     icon: String,
     label: String,
     value: String,
-    color: Color,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = icon, fontSize = 20.sp)
+        Text(text = icon, fontSize = 18.sp)
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = value,
             style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = color
+            fontWeight = FontWeight.SemiBold,
+            color = TextPrimary
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = OnSurfaceVariant
+            color = TextTertiary
         )
     }
 }
@@ -267,18 +283,19 @@ fun EmptyHistoryPlaceholder() {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "📭", fontSize = 64.sp)
+            Text(text = "📭", fontSize = 48.sp)
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "Sin registros",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = TextPrimary
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "Sincroniza tus datos para ver el historial",
                 style = MaterialTheme.typography.bodyMedium,
-                color = OnSurfaceVariant,
+                color = TextSecondary,
                 textAlign = TextAlign.Center
             )
         }
@@ -305,7 +322,8 @@ private fun formatDate(dateString: String): String {
                 12 -> "Diciembre"
                 else -> ""
             }
-            "$day de $month"
+            val year = parts[0]
+            "$day de $month, $year"
         } else {
             dateString
         }
@@ -337,13 +355,22 @@ fun HistoryScreenPreview() {
                     estres = 35
                 ),
                 HistoryRecord(
-                    fecha = "2025-11-23",
-                    horaRegistro = "22:15",
-                    pasos = 10234,
+                    fecha = "2025-11-24",
+                    horaRegistro = "10:15",
+                    pasos = 3200,
                     frecuenciaCardiaca = 68,
-                    horasSueno = 8.0,
+                    horasSueno = 7.5,
                     spo2 = 97.0,
                     estres = 28
+                ),
+                HistoryRecord(
+                    fecha = "2025-11-23",
+                    horaRegistro = "22:00",
+                    pasos = 10234,
+                    frecuenciaCardiaca = 70,
+                    horasSueno = 8.0,
+                    spo2 = 98.0,
+                    estres = 25
                 )
             ),
             isLoading = false,

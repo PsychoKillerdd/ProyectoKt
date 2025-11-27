@@ -45,7 +45,9 @@ fun DashboardScreen(
     onSyncClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onLogoutClick: () -> Unit,
+    onAnalyzeClick: () -> Unit,
     isLoading: Boolean = false,
+    isAnalyzing: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -191,9 +193,11 @@ fun DashboardScreen(
                 
                 Spacer(modifier = Modifier.height(12.dp))
                 
-                // Mensaje de IA
+                // Mensaje de IA con botón de análisis
                 AIMessageCard(
                     message = iaMessage,
+                    onAnalyzeClick = onAnalyzeClick,
+                    isAnalyzing = isAnalyzing,
                     modifier = Modifier.fillMaxWidth()
                 )
                 
@@ -324,7 +328,8 @@ fun DashboardScreenPreview() {
             iaMessage = "Tu ritmo cardíaco se ha mantenido estable hoy. Recuerda mantener una buena hidratación durante el día.",
             onSyncClick = { },
             onHistoryClick = { },
-            onLogoutClick = { }
+            onLogoutClick = { },
+            onAnalyzeClick = { }
         )
     }
 }

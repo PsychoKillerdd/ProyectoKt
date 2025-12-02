@@ -135,8 +135,11 @@ fun RegisterScreen(
                             shape = RoundedCornerShape(8.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
                                 focusedBorderColor = Primary,
-                                unfocusedBorderColor = Border
+                                unfocusedBorderColor = Border,
+                                cursorColor = Primary
                             )
                         )
                         
@@ -159,8 +162,11 @@ fun RegisterScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
                                 focusedBorderColor = Primary,
-                                unfocusedBorderColor = Border
+                                unfocusedBorderColor = Border,
+                                cursorColor = Primary
                             )
                         )
                         
@@ -198,8 +204,11 @@ fun RegisterScreen(
                             readOnly = true,
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
                                 focusedBorderColor = Primary,
-                                unfocusedBorderColor = Border
+                                unfocusedBorderColor = Border,
+                                cursorColor = Primary
                             )
                         )
                         
@@ -264,8 +273,11 @@ fun RegisterScreen(
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     singleLine = true,
                                     colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = TextPrimary,
+                                        unfocusedTextColor = TextPrimary,
                                         focusedBorderColor = Primary,
-                                        unfocusedBorderColor = Border
+                                        unfocusedBorderColor = Border,
+                                        cursorColor = Primary
                                     )
                                 )
                             }
@@ -286,8 +298,11 @@ fun RegisterScreen(
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     singleLine = true,
                                     colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = TextPrimary,
+                                        unfocusedTextColor = TextPrimary,
                                         focusedBorderColor = Primary,
-                                        unfocusedBorderColor = Border
+                                        unfocusedBorderColor = Border,
+                                        cursorColor = Primary
                                     )
                                 )
                             }
@@ -312,8 +327,11 @@ fun RegisterScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
                                 focusedBorderColor = Primary,
-                                unfocusedBorderColor = Border
+                                unfocusedBorderColor = Border,
+                                cursorColor = Primary
                             )
                         )
                         
@@ -335,8 +353,11 @@ fun RegisterScreen(
                             shape = RoundedCornerShape(8.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
                                 focusedBorderColor = Primary,
-                                unfocusedBorderColor = Border
+                                unfocusedBorderColor = Border,
+                                cursorColor = Primary
                             )
                         )
                     }
@@ -399,8 +420,11 @@ fun RegisterScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
                                 focusedBorderColor = Primary,
-                                unfocusedBorderColor = Border
+                                unfocusedBorderColor = Border,
+                                cursorColor = Primary
                             )
                         )
                         
@@ -435,9 +459,12 @@ fun RegisterScreen(
                             isError = registerData.confirmPassword.isNotEmpty() && 
                                      registerData.password != registerData.confirmPassword,
                             colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
                                 focusedBorderColor = Primary,
                                 unfocusedBorderColor = Border,
-                                errorBorderColor = Error
+                                errorBorderColor = Error,
+                                cursorColor = Primary
                             )
                         )
                         

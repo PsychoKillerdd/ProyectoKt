@@ -87,6 +87,8 @@ class RegisterComposeActivity : ComponentActivity() {
         }
         
         // Crear usuario en Firebase Auth
+        android.util.Log.d("RegisterActivity", "Iniciando registro para: ${data.email}")
+        
         firebaseAuth.createUserWithEmailAndPassword(data.email, data.password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
@@ -94,37 +96,51 @@ class RegisterComposeActivity : ComponentActivity() {
                     val currentUser = firebaseAuth.currentUser
                     val userId = currentUser?.uid
                     
+                    android.util.Log.d("RegisterActivity", "Usuario creado en Auth. UID: $userId")
+                    
                     if (userId == null || currentUser == null) {
+                        android.util.Log.e("RegisterActivity", "userId es null después de crear usuario")
                         callback(false, "Error al obtener ID de usuario")
                         return@addOnCompleteListener
                     }
                     
                     // Recargar el token para asegurar que la autenticación esté sincronizada
+                    android.util.Log.d("RegisterActivity", "Obteniendo token de ID...")
+                    
                     currentUser.getIdToken(true).addOnCompleteListener { tokenTask ->
                         if (tokenTask.isSuccessful) {
-                            // Guardar datos en Firestore
-                            val user = User(
-                                userId = userId,
-                                name = data.name,
-                                dob = data.dob,
-                                email = data.email,
-                                height = data.height.toDoubleOrNull() ?: 0.0,
-                                weight = data.weight.toDoubleOrNull() ?: 0.0,
-                                goal = data.goal,
-                                sex = data.sex,
-                                emergencyContact = data.emergencyContact
+                            android.util.Log.d("RegisterActivity", "Token obtenido exitosamente")
+                            
+                            // Guardar datos en Firestore usando un Map simple
+                            val userData = hashMapOf(
+                                "userId" to userId,
+                                "name" to data.name,
+                                "dob" to data.dob,
+                                "email" to data.email,
+                                "height" to (data.height.toDoubleOrNull() ?: 0.0),
+                                "weight" to (data.weight.toDoubleOrNull() ?: 0.0),
+                                "goal" to data.goal,
+                                "sex" to data.sex,
+                                "emergencyContact" to data.emergencyContact,
+                                "createdAt" to com.google.firebase.Timestamp.now()
                             )
                             
-                            firestore.collection("users").document(userId).set(user)
+                            android.util.Log.d("RegisterActivity", "Guardando en Firestore: users/$userId")
+                            android.util.Log.d("RegisterActivity", "Datos: $userData")
+                            
+                            firestore.collection("users").document(userId).set(userData)
                                 .addOnSuccessListener {
+                                    android.util.Log.d("RegisterActivity", "✅ Datos guardados exitosamente en Firestore")
                                     Toast.makeText(this, "¡Registro exitoso!", Toast.LENGTH_SHORT).show()
                                     callback(true, null)
                                 }
                                 .addOnFailureListener { e ->
-                                    android.util.Log.e("RegisterActivity", "Firestore error: ${e.message}", e)
+                                    android.util.Log.e("RegisterActivity", "❌ Firestore error: ${e.message}", e)
+                                    android.util.Log.e("RegisterActivity", "Error class: ${e.javaClass.simpleName}")
                                     callback(false, "Error al guardar datos: ${e.message}")
                                 }
                         } else {
+                            android.util.Log.e("RegisterActivity", "Error obteniendo token: ${tokenTask.exception?.message}")
                             callback(false, "Error de autenticación: ${tokenTask.exception?.message}")
                         }
                     }

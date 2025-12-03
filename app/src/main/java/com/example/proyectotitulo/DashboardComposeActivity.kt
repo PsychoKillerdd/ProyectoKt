@@ -334,26 +334,44 @@ class DashboardComposeActivity : ComponentActivity() {
                 
                 val timeRange = TimeRangeFilter.between(startOfDay, now)
                 
+                Log.d(TAG, "Leyendo datos de Health Connect desde $startOfDay hasta $now")
+                
                 // Steps
                 val stepsResponse = client.readRecords(
                     ReadRecordsRequest(StepsRecord::class, timeRange)
                 )
                 val totalSteps = stepsResponse.records.sumOf { it.count }
+                Log.d(TAG, "Pasos encontrados: $totalSteps (${stepsResponse.records.size} registros)")
                 
-                // Heart Rate
+                // Heart Rate - Obtener el valor más reciente, no el promedio del día
                 val hrResponse = client.readRecords(
                     ReadRecordsRequest(HeartRateRecord::class, timeRange)
                 )
                 val hrSamples = hrResponse.records.flatMap { it.samples }
-                val avgHr = hrSamples.map { it.beatsPerMinute }.average().toLong()
+                
+                // Ordenar por tiempo y obtener el más reciente
+                val sortedSamples = hrSamples.sortedByDescending { it.time }
+                val latestHr = sortedSamples.firstOrNull()?.beatsPerMinute ?: 0L
+                val avgHr = if (hrSamples.isNotEmpty()) hrSamples.map { it.beatsPerMinute }.average().toLong() else 0L
                 val minHr = hrSamples.minOfOrNull { it.beatsPerMinute } ?: 0
                 val maxHr = hrSamples.maxOfOrNull { it.beatsPerMinute } ?: 0
+                
+                // Usar el valor más reciente como FC actual
+                val currentHr = latestHr
+                
+                Log.d(TAG, "FC encontrada: actual=$currentHr, avg=$avgHr, min=$minHr, max=$maxHr (${hrSamples.size} muestras)")
+                if (sortedSamples.isNotEmpty()) {
+                    Log.d(TAG, "Última lectura de FC: ${sortedSamples.first().beatsPerMinute} bpm a las ${sortedSamples.first().time}")
+                }
                 
                 // SpO2
                 val spo2Response = client.readRecords(
                     ReadRecordsRequest(OxygenSaturationRecord::class, timeRange)
                 )
-                val avgSpo2 = spo2Response.records.map { it.percentage.value }.average()
+                val avgSpo2 = if (spo2Response.records.isNotEmpty()) {
+                    spo2Response.records.map { it.percentage.value }.average()
+                } else 0.0
+                Log.d(TAG, "SpO2 encontrado: $avgSpo2 (${spo2Response.records.size} registros)")
                 
                 // Sleep (last night)
                 val sleepStart = LocalDate.now().minusDays(1).atTime(20, 0)
@@ -367,17 +385,30 @@ class DashboardComposeActivity : ComponentActivity() {
                 val sleepHours = sleepResponse.records.sumOf {
                     Duration.between(it.startTime, it.endTime).toMinutes()
                 } / 60.0
+                Log.d(TAG, "Sueño encontrado: $sleepHours horas (${sleepResponse.records.size} sesiones)")
+                
+                // Verificar si hay datos reales
+                val hasRealData = totalSteps > 0 || currentHr > 0 || sleepHours > 0 || avgSpo2 > 0
+                
+                if (!hasRealData) {
+                    Log.w(TAG, "⚠️ Health Connect no tiene datos. ¿El reloj está sincronizado con Samsung Health?")
+                    Toast.makeText(this@DashboardComposeActivity, "⚠️ No hay datos en Health Connect. Verifica que Samsung Health esté sincronizado.", Toast.LENGTH_LONG).show()
+                    loadHealthDataFromFirebase { data, hr, sleep, _ -> onResult(data, hr, sleep) }
+                    return@launch
+                }
                 
                 val healthData = HealthData(
                     steps = totalSteps,
-                    heartRate = avgHr,
+                    heartRate = currentHr,  // Usar FC más reciente, no promedio
                     heartRateMin = minHr,
                     heartRateMax = maxHr,
                     sleepHours = sleepHours,
                     spO2 = avgSpo2,
-                    stressLevel = calculateStress(avgHr.toInt()),
+                    stressLevel = calculateStress(currentHr.toInt()),  // Calcular estrés con FC actual
                     isWatchConnected = true
                 )
+                
+                Log.d(TAG, "Guardando HealthData: FC=$currentHr, pasos=$totalSteps, sueño=$sleepHours, SpO2=$avgSpo2")
                 
                 // Guardar en Firebase
                 saveHealthDataToFirebase(healthData)
@@ -388,7 +419,7 @@ class DashboardComposeActivity : ComponentActivity() {
                     onResult(healthData, hrChart, sleepChart)
                 }
                 
-                Toast.makeText(this@DashboardComposeActivity, "✅ Datos sincronizados", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@DashboardComposeActivity, "✅ Datos sincronizados (FC: $currentHr bpm)", Toast.LENGTH_SHORT).show()
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Error syncing health data", e)

@@ -1,5 +1,4 @@
 package com.example.proyectotitulo
-
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -27,13 +26,10 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.*
 import java.util.*
-
 class DashboardComposeActivity : ComponentActivity() {
-    
     companion object {
         private const val TAG = "DashboardCompose"
     }
-    
     private lateinit var firebaseAuth: FirebaseAuth
     private lateinit var firestore: FirebaseFirestore
     private var healthConnectClient: HealthConnectClient? = null
@@ -44,6 +40,19 @@ class DashboardComposeActivity : ComponentActivity() {
         HealthPermission.getReadPermission(SleepSessionRecord::class),
         HealthPermission.getReadPermission(OxygenSaturationRecord::class)
     )
+    
+    // Launcher para solicitar permisos de Health Connect
+    private val requestPermissionsLauncher = registerForActivityResult(
+        PermissionController.createRequestPermissionResultContract()
+    ) { grantedPermissions ->
+        if (grantedPermissions.containsAll(healthPermissions)) {
+            Log.d(TAG, "✅ Todos los permisos de Health Connect concedidos")
+            Toast.makeText(this, "✅ Permisos concedidos", Toast.LENGTH_SHORT).show()
+        } else {
+            Log.w(TAG, "⚠️ Algunos permisos no fueron concedidos: ${healthPermissions - grantedPermissions}")
+            Toast.makeText(this, "⚠️ Algunos permisos no fueron concedidos", Toast.LENGTH_SHORT).show()
+        }
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,6 +65,10 @@ class DashboardComposeActivity : ComponentActivity() {
         val availabilityStatus = HealthConnectClient.getSdkStatus(this)
         if (availabilityStatus == HealthConnectClient.SDK_AVAILABLE) {
             healthConnectClient = HealthConnectClient.getOrCreate(this)
+            // Verificar y solicitar permisos al inicio
+            checkAndRequestPermissions()
+        } else {
+            Log.w(TAG, "Health Connect no disponible. Status: $availabilityStatus")
         }
         
         setContent {
@@ -111,6 +124,27 @@ class DashboardComposeActivity : ComponentActivity() {
                     isLoading = isLoading,
                     isAnalyzing = isAnalyzing
                 )
+            }
+        }
+    }
+    
+    /**
+     * Verifica y solicita permisos de Health Connect si es necesario
+     */
+    private fun checkAndRequestPermissions() {
+        lifecycleScope.launch {
+            try {
+                val client = healthConnectClient ?: return@launch
+                val granted = client.permissionController.getGrantedPermissions()
+                
+                if (!granted.containsAll(healthPermissions)) {
+                    Log.d(TAG, "Solicitando permisos de Health Connect...")
+                    requestPermissionsLauncher.launch(healthPermissions)
+                } else {
+                    Log.d(TAG, "Todos los permisos ya están concedidos")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error verificando permisos", e)
             }
         }
     }
@@ -269,9 +303,9 @@ class DashboardComposeActivity : ComponentActivity() {
             try {
                 val client = healthConnectClient
                 if (client == null) {
-                    Toast.makeText(this@DashboardComposeActivity, "Health Connect no disponible - Insertando datos de prueba...", Toast.LENGTH_SHORT).show()
+                    Log.w(TAG, "Health Connect no disponible")
+                    Toast.makeText(this@DashboardComposeActivity, "⚠️ Health Connect no disponible - Usando datos de prueba", Toast.LENGTH_LONG).show()
                     insertTestData()
-                    // Esperar un momento para que los datos se guarden
                     kotlinx.coroutines.delay(1000)
                     loadHealthDataFromFirebase { data, hr, sleep, _ -> onResult(data, hr, sleep) }
                     return@launch
@@ -279,10 +313,17 @@ class DashboardComposeActivity : ComponentActivity() {
                 
                 // Verificar permisos
                 val granted = client.permissionController.getGrantedPermissions()
+                Log.d(TAG, "Permisos concedidos: $granted")
+                Log.d(TAG, "Permisos requeridos: $healthPermissions")
+                
                 if (!granted.containsAll(healthPermissions)) {
-                    Toast.makeText(this@DashboardComposeActivity, "Permisos no concedidos - Insertando datos de prueba...", Toast.LENGTH_SHORT).show()
-                    insertTestData()
-                    kotlinx.coroutines.delay(1000)
+                    Log.w(TAG, "Faltan permisos. Solicitando...")
+                    Toast.makeText(this@DashboardComposeActivity, "🔐 Solicitando permisos de Health Connect...", Toast.LENGTH_SHORT).show()
+                    
+                    // Solicitar permisos
+                    requestPermissionsLauncher.launch(healthPermissions)
+                    
+                    // Mientras tanto, cargar datos existentes de Firebase
                     loadHealthDataFromFirebase { data, hr, sleep, _ -> onResult(data, hr, sleep) }
                     return@launch
                 }

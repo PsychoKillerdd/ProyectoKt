@@ -90,33 +90,44 @@ class RegisterComposeActivity : ComponentActivity() {
         firebaseAuth.createUserWithEmailAndPassword(data.email, data.password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    val userId = firebaseAuth.currentUser?.uid
-                    if (userId == null) {
+                    // Obtener el usuario actual después de la creación
+                    val currentUser = firebaseAuth.currentUser
+                    val userId = currentUser?.uid
+                    
+                    if (userId == null || currentUser == null) {
                         callback(false, "Error al obtener ID de usuario")
                         return@addOnCompleteListener
                     }
                     
-                    // Guardar datos en Firestore
-                    val user = User(
-                        userId = userId,
-                        name = data.name,
-                        dob = data.dob,
-                        email = data.email,
-                        height = data.height.toDoubleOrNull() ?: 0.0,
-                        weight = data.weight.toDoubleOrNull() ?: 0.0,
-                        goal = data.goal,
-                        sex = data.sex,
-                        emergencyContact = data.emergencyContact
-                    )
-                    
-                    firestore.collection("users").document(userId).set(user)
-                        .addOnSuccessListener {
-                            Toast.makeText(this, "¡Registro exitoso!", Toast.LENGTH_SHORT).show()
-                            callback(true, null)
+                    // Recargar el token para asegurar que la autenticación esté sincronizada
+                    currentUser.getIdToken(true).addOnCompleteListener { tokenTask ->
+                        if (tokenTask.isSuccessful) {
+                            // Guardar datos en Firestore
+                            val user = User(
+                                userId = userId,
+                                name = data.name,
+                                dob = data.dob,
+                                email = data.email,
+                                height = data.height.toDoubleOrNull() ?: 0.0,
+                                weight = data.weight.toDoubleOrNull() ?: 0.0,
+                                goal = data.goal,
+                                sex = data.sex,
+                                emergencyContact = data.emergencyContact
+                            )
+                            
+                            firestore.collection("users").document(userId).set(user)
+                                .addOnSuccessListener {
+                                    Toast.makeText(this, "¡Registro exitoso!", Toast.LENGTH_SHORT).show()
+                                    callback(true, null)
+                                }
+                                .addOnFailureListener { e ->
+                                    android.util.Log.e("RegisterActivity", "Firestore error: ${e.message}", e)
+                                    callback(false, "Error al guardar datos: ${e.message}")
+                                }
+                        } else {
+                            callback(false, "Error de autenticación: ${tokenTask.exception?.message}")
                         }
-                        .addOnFailureListener { e ->
-                            callback(false, "Error al guardar datos: ${e.message}")
-                        }
+                    }
                 } else {
                     val errorMsg = when {
                         task.exception?.message?.contains("email address is already") == true ->

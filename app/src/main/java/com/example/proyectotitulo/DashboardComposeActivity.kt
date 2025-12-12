@@ -61,6 +61,11 @@ class DashboardComposeActivity : ComponentActivity() {
         firebaseAuth = FirebaseAuth.getInstance()
         firestore = FirebaseFirestore.getInstance()
         
+        // Inicializar servicio de alertas
+        AlertasService.init(applicationContext)
+        AlertasService.startListening()
+        Log.d(TAG, "Servicio de alertas iniciado")
+        
         // Verificar si Health Connect está disponible
         val availabilityStatus = HealthConnectClient.getSdkStatus(this)
         if (availabilityStatus == HealthConnectClient.SDK_AVAILABLE) {
@@ -108,6 +113,9 @@ class DashboardComposeActivity : ComponentActivity() {
                     },
                     onHistoryClick = {
                         startActivity(Intent(this, HistoryComposeActivity::class.java))
+                    },
+                    onAlertasClick = {
+                        startActivity(Intent(this, AlertasComposeActivity::class.java))
                     },
                     onLogoutClick = {
                         firebaseAuth.signOut()
@@ -591,7 +599,12 @@ class DashboardComposeActivity : ComponentActivity() {
                     Log.e(TAG, "Error saving test data $index", e)
                 }
         }
-        
-        Toast.makeText(this, "✅ Datos de prueba insertados", Toast.LENGTH_SHORT).show()
+            
+    override fun onDestroy() {
+        super.onDestroy()
+        // Detener el servicio de alertas al cerrar la actividad
+        AlertasService.stopListening()
+        Log.d(TAG, "Servicio de alertas detenido")
+    }        Toast.makeText(this, "✅ Datos de prueba insertados", Toast.LENGTH_SHORT).show()
     }
 }

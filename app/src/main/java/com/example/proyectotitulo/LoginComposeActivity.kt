@@ -23,6 +23,8 @@ class LoginComposeActivity : ComponentActivity() {
         
         // Si ya está logueado, ir al Dashboard
         if (firebaseAuth.currentUser != null) {
+            // Inicializar servicio de alertas
+            AlertasService.init(applicationContext)
             navigateToDashboard()
             return
         }
@@ -67,6 +69,8 @@ class LoginComposeActivity : ComponentActivity() {
         firebaseAuth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
+                    // Inicializar servicio de alertas después del login
+                    AlertasService.init(applicationContext)
                     callback(true, null)
                 } else {
                     val errorMsg = when {

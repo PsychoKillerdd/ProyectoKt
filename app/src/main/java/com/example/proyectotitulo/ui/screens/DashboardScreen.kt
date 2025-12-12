@@ -44,6 +44,7 @@ fun DashboardScreen(
     iaMessage: String,
     onSyncClick: () -> Unit,
     onHistoryClick: () -> Unit,
+    onAlertasClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onAnalyzeClick: () -> Unit,
     isLoading: Boolean = false,
@@ -233,6 +234,23 @@ fun DashboardScreen(
                     }
                 }
                 
+                // Botón de Alertas (nueva fila)
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = onAlertasClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Error)
+                ) {
+                    Text(
+                        text = "🚨 Alertas de Salud",
+                        fontWeight = FontWeight.Medium,
+                        color = Error
+                    )
+                }
+                
                 Spacer(modifier = Modifier.height(32.dp))
             }
             
@@ -328,6 +346,7 @@ fun DashboardScreenPreview() {
             iaMessage = "Tu ritmo cardíaco se ha mantenido estable hoy. Recuerda mantener una buena hidratación durante el día.",
             onSyncClick = { },
             onHistoryClick = { },
+            onAlertasClick = { },
             onLogoutClick = { },
             onAnalyzeClick = { }
         )

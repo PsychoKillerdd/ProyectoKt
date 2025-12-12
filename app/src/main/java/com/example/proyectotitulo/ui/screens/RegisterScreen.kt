@@ -36,7 +36,8 @@ data class RegisterData(
     val weight: String = "",
     val goal: String = "",
     val sex: Int = -1, // 0 = Femenino, 1 = Masculino
-    val emergencyContact: String = ""
+    val emergencyContact1: String = "",
+    val emergencyContact2: String = ""
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -310,18 +311,45 @@ fun RegisterScreen(
                         
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                        // Contacto de emergencia
+                        // Contacto de emergencia 1
                         Text(
-                            text = "Contacto de Emergencia",
+                            text = "Contacto de Emergencia 1",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Medium,
                             color = TextPrimary
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
-                            value = registerData.emergencyContact,
-                            onValueChange = { registerData = registerData.copy(emergencyContact = it) },
+                            value = registerData.emergencyContact1,
+                            onValueChange = { registerData = registerData.copy(emergencyContact1 = it) },
                             placeholder = { Text("+56 9 1234 5678", color = TextTertiary) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = Border,
+                                cursorColor = Primary
+                            )
+                        )
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        // Contacto de emergencia 2
+                        Text(
+                            text = "Contacto de Emergencia 2",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        OutlinedTextField(
+                            value = registerData.emergencyContact2,
+                            onValueChange = { registerData = registerData.copy(emergencyContact2 = it) },
+                            placeholder = { Text("+56 9 8765 4321", color = TextTertiary) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),

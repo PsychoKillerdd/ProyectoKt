@@ -121,7 +121,8 @@ class RegisterComposeActivity : ComponentActivity() {
                                 "weight" to (data.weight.toDoubleOrNull() ?: 0.0),
                                 "goal" to data.goal,
                                 "sex" to data.sex,
-                                "emergencyContact" to data.emergencyContact,
+                                "emergencyContact1" to data.emergencyContact1,
+                                "emergencyContact2" to data.emergencyContact2,
                                 "createdAt" to com.google.firebase.Timestamp.now()
                             )
                             

@@ -98,6 +98,12 @@
             android:name=".HistoryActivity"
             android:exported="false" />
 
+        <!-- AlertasComposeActivity (Jetpack Compose) -->
+        <activity
+            android:name=".AlertasComposeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ProyectoTitulo" />
+
         <!-- MainActivity is no longer the launcher -->
         <activity
             android:name=".MainActivity"

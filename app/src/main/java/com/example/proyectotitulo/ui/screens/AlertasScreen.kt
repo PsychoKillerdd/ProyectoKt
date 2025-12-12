@@ -28,7 +28,6 @@ fun AlertasScreen(
     isLoading: Boolean,
     onBackClick: () -> Unit,
     onMarcarAtendida: (String) -> Unit,
-    onContactarEmergenciaSMS: (AlertaSalud) -> Unit,
     onContactarEmergenciaWhatsApp: (AlertaSalud) -> Unit
 ) {
     Scaffold(
@@ -108,7 +107,6 @@ fun AlertasScreen(
                             AlertaCard(
                                 alerta = alerta,
                                 onMarcarAtendida = { onMarcarAtendida(alerta.id) },
-                                onContactarSMS = { onContactarEmergenciaSMS(alerta) },
                                 onContactarWhatsApp = { onContactarEmergenciaWhatsApp(alerta) }
                             )
                         }
@@ -123,7 +121,6 @@ fun AlertasScreen(
 fun AlertaCard(
     alerta: AlertaSalud,
     onMarcarAtendida: () -> Unit,
-    onContactarSMS: () -> Unit,
     onContactarWhatsApp: () -> Unit
 ) {
     val backgroundColor = when (alerta.tipo.lowercase()) {
@@ -306,35 +303,20 @@ fun AlertaCard(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                Row(
+                // Botón WhatsApp (Full Width)
+                Button(
+                    onClick = onContactarWhatsApp,
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF25D366)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    // Botón SMS
-                    OutlinedButton(
-                        onClick = onContactarSMS,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Error
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Error),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("📱 SMS", fontSize = MaterialTheme.typography.bodySmall.fontSize)
-                    }
-                    
-                    // Botón WhatsApp
-                    OutlinedButton(
-                        onClick = onContactarWhatsApp,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF25D366)
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF25D366)),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("💬 WhatsApp", fontSize = MaterialTheme.typography.bodySmall.fontSize)
-                    }
+                    Text(
+                        "💬 Enviar WhatsApp",
+                        color = Color.White,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
             

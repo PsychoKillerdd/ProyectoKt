@@ -58,9 +58,6 @@ class AlertasComposeActivity : ComponentActivity() {
                             alertas = loadedAlertas
                         }
                     },
-                    onContactarEmergenciaSMS = { alerta ->
-                        enviarSMSEmergencia(alerta, contactosEmergencia)
-                    },
                     onContactarEmergenciaWhatsApp = { alerta ->
                         enviarWhatsAppEmergencia(alerta, contactosEmergencia)
                     }
@@ -148,12 +145,10 @@ class AlertasComposeActivity : ComponentActivity() {
             }
     }
     
-    private fun construirMensajeAlerta(alerta: AlertaSalud): String {
-        val nombre = firebaseAuth.currentUser?.displayName ?: "Tu contacto"
-        
+    private fun construirMensajeAlerta(alerta: AlertaSalud, nombreUsuario: String = "Tu contacto"): String {
         return buildString {
-            append("🚨 ALERTA DE SALUD - HealthTrack 🚨\n\n")
-            append("$nombre necesita tu atención:\n\n")
+            append("🚨 ALERTA DE SALUD - Samsung Machine 🚨\n\n")
+            append("*$nombreUsuario* necesita tu atención:\n\n")
             append("${alerta.titulo}\n")
             append("${alerta.mensaje}\n\n")
             
@@ -188,34 +183,13 @@ class AlertasComposeActivity : ComponentActivity() {
         }
     }
     
-    private fun enviarSMSEmergencia(alerta: AlertaSalud, contactos: Pair<String, String>) {
-        val mensaje = construirMensajeAlerta(alerta)
-        
-        // Determinar qué contacto usar (priorizar el primero)
-        val numeroDestino = when {
-            contactos.first.isNotBlank() -> contactos.first
-            contactos.second.isNotBlank() -> contactos.second
-            else -> {
-                Toast.makeText(this, "No hay contactos de emergencia registrados", Toast.LENGTH_LONG).show()
-                return
-            }
-        }
-        
-        try {
-            val smsIntent = Intent(Intent.ACTION_VIEW).apply {
-                data = Uri.parse("sms:$numeroDestino")
-                putExtra("sms_body", mensaje)
-            }
-            startActivity(smsIntent)
-            Log.d(TAG, "SMS de emergencia enviado a: $numeroDestino")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error al enviar SMS: ${e.message}", e)
-            Toast.makeText(this, "Error al abrir SMS", Toast.LENGTH_SHORT).show()
-        }
-    }
     
     private fun enviarWhatsAppEmergencia(alerta: AlertaSalud, contactos: Pair<String, String>) {
-        val mensaje = construirMensajeAlerta(alerta)
+        val userId = firebaseAuth.currentUser?.uid
+        if (userId == null) {
+            Toast.makeText(this, "Error: Usuario no autenticado", Toast.LENGTH_SHORT).show()
+            return
+        }
         
         // Determinar qué contacto usar (priorizar el primero)
         val numeroDestino = when {
@@ -226,6 +200,24 @@ class AlertasComposeActivity : ComponentActivity() {
                 return
             }
         }
+        
+        // Cargar el nombre del usuario desde Firestore
+        firestore.collection("users")
+            .document(userId)
+            .get()
+            .addOnSuccessListener { document ->
+                val nombreUsuario = document.getString("name") ?: "Tu contacto"
+                val mensaje = construirMensajeAlerta(alerta, nombreUsuario)
+                enviarWhatsApp(numeroDestino, mensaje)
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error cargando nombre: ${e.message}", e)
+                val mensaje = construirMensajeAlerta(alerta, "Tu contacto")
+                enviarWhatsApp(numeroDestino, mensaje)
+            }
+    }
+    
+    private fun enviarWhatsApp(numeroDestino: String, mensaje: String) {
         
         try {
             val whatsappIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -248,4 +240,5 @@ class AlertasComposeActivity : ComponentActivity() {
             }
         }
     }
+}
 }

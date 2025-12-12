@@ -599,12 +599,14 @@ class DashboardComposeActivity : ComponentActivity() {
                     Log.e(TAG, "Error saving test data $index", e)
                 }
         }
-            
+        
+        Toast.makeText(this, "✅ Datos de prueba insertados", Toast.LENGTH_SHORT).show()
+    }
+    
     override fun onDestroy() {
         super.onDestroy()
         // Detener el servicio de alertas al cerrar la actividad
         AlertasService.stopListening()
         Log.d(TAG, "Servicio de alertas detenido")
-    }        Toast.makeText(this, "✅ Datos de prueba insertados", Toast.LENGTH_SHORT).show()
     }
 }

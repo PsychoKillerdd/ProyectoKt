@@ -27,7 +27,9 @@ fun AlertasScreen(
     alertas: List<AlertaSalud>,
     isLoading: Boolean,
     onBackClick: () -> Unit,
-    onMarcarAtendida: (String) -> Unit
+    onMarcarAtendida: (String) -> Unit,
+    onContactarEmergenciaSMS: (AlertaSalud) -> Unit,
+    onContactarEmergenciaWhatsApp: (AlertaSalud) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -105,7 +107,9 @@ fun AlertasScreen(
                         items(alertas) { alerta ->
                             AlertaCard(
                                 alerta = alerta,
-                                onMarcarAtendida = { onMarcarAtendida(alerta.id) }
+                                onMarcarAtendida = { onMarcarAtendida(alerta.id) },
+                                onContactarSMS = { onContactarEmergenciaSMS(alerta) },
+                                onContactarWhatsApp = { onContactarEmergenciaWhatsApp(alerta) }
                             )
                         }
                     }
@@ -118,7 +122,9 @@ fun AlertasScreen(
 @Composable
 fun AlertaCard(
     alerta: AlertaSalud,
-    onMarcarAtendida: () -> Unit
+    onMarcarAtendida: () -> Unit,
+    onContactarSMS: () -> Unit,
+    onContactarWhatsApp: () -> Unit
 ) {
     val backgroundColor = when (alerta.tipo.lowercase()) {
         "critica" -> Error.copy(alpha = 0.1f)
@@ -283,6 +289,51 @@ fun AlertaCard(
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary
                         )
+                    }
+                }
+            }
+            
+            // Botones de Contacto de Emergencia (solo para alertas críticas)
+            if (alerta.tipo.lowercase() == "critica" && !alerta.atendida) {
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Text(
+                    text = "📱 Contactar Emergencia",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Error
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Botón SMS
+                    OutlinedButton(
+                        onClick = onContactarSMS,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Error
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Error),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("📱 SMS", fontSize = MaterialTheme.typography.bodySmall.fontSize)
+                    }
+                    
+                    // Botón WhatsApp
+                    OutlinedButton(
+                        onClick = onContactarWhatsApp,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFF25D366)
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF25D366)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("💬 WhatsApp", fontSize = MaterialTheme.typography.bodySmall.fontSize)
                     }
                 }
             }

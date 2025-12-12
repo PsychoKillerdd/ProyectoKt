@@ -126,9 +126,20 @@ class AlertasComposeActivity : ComponentActivity() {
             .document(userId)
             .get()
             .addOnSuccessListener { document ->
-                val contacto1 = document.getString("emergencyContact1") ?: ""
-                val contacto2 = document.getString("emergencyContact2") ?: ""
-                Log.d(TAG, "Contactos de emergencia cargados")
+                // Intentar cargar los nuevos campos (emergencyContact1 y emergencyContact2)
+                var contacto1 = document.getString("emergencyContact1") ?: ""
+                var contacto2 = document.getString("emergencyContact2") ?: ""
+                
+                // Fallback: si no existen los nuevos campos, usar el campo antiguo
+                if (contacto1.isEmpty() && contacto2.isEmpty()) {
+                    val contactoAntiguo = document.getString("emergencyContact") ?: ""
+                    if (contactoAntiguo.isNotEmpty()) {
+                        contacto1 = contactoAntiguo
+                        Log.d(TAG, "Usando formato antiguo de contacto de emergencia")
+                    }
+                }
+                
+                Log.d(TAG, "Contactos cargados - C1: ${contacto1.isNotEmpty()}, C2: ${contacto2.isNotEmpty()}")
                 onResult(contacto1, contacto2)
             }
             .addOnFailureListener { e ->

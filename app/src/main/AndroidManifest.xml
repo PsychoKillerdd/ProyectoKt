@@ -104,6 +104,12 @@
             android:exported="false"
             android:theme="@style/Theme.ProyectoTitulo" />
 
+        <!-- Servicio de alertas en tiempo real -->
+        <service
+            android:name=".AlertasForegroundService"
+            android:enabled="true"
+            android:exported="false" />
+
         <!-- MainActivity is no longer the launcher -->
         <activity
             android:name=".MainActivity"

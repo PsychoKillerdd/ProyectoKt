@@ -61,10 +61,17 @@ class DashboardComposeActivity : ComponentActivity() {
         firebaseAuth = FirebaseAuth.getInstance()
         firestore = FirebaseFirestore.getInstance()
         
-        // Inicializar servicio de alertas
+        // Iniciar servicio de alertas en background
+        val serviceIntent = Intent(this, AlertasForegroundService::class.java).apply {
+            action = AlertasForegroundService.ACTION_START
+        }
+        startService(serviceIntent)
+        Log.d(TAG, "🚀 Servicio de alertas en background iniciado")
+        
+        // También inicializar servicio interno para notificaciones inmediatas
         AlertasService.init(applicationContext)
         AlertasService.startListening()
-        Log.d(TAG, "Servicio de alertas iniciado")
+        Log.d(TAG, "Servicio de alertas interno iniciado")
         
         // Verificar si Health Connect está disponible
         val availabilityStatus = HealthConnectClient.getSdkStatus(this)

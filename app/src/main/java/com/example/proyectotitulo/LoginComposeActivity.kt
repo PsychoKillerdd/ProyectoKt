@@ -69,7 +69,13 @@ class LoginComposeActivity : ComponentActivity() {
         firebaseAuth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    // Inicializar servicio de alertas después del login
+                    // Iniciar servicio de alertas en background después del login
+                    val serviceIntent = Intent(applicationContext, AlertasForegroundService::class.java).apply {
+                        action = AlertasForegroundService.ACTION_START
+                    }
+                    startService(serviceIntent)
+                    
+                    // También inicializar servicio interno
                     AlertasService.init(applicationContext)
                     callback(true, null)
                 } else {

@@ -336,4 +336,30 @@ object AlertasService {
                 callback(0)
             }
     }
+    
+    companion object {
+        /**
+         * Función estática para mostrar notificación (usada por el servicio)
+         */
+        fun mostrarNotificacionPublica(context: Context, alerta: AlertaSalud) {
+            instance?.mostrarNotificacionAlerta(alerta)
+        }
+        
+        /**
+         * Función estática para marcar alerta como leída
+         */
+        fun marcarAlertaComoLeidaStatic(firestore: FirebaseFirestore, userId: String, alertaId: String) {
+            firestore.collection("users")
+                .document(userId)
+                .collection("alertas")
+                .document(alertaId)
+                .update("leida", true)
+                .addOnSuccessListener {
+                    Log.d(TAG, "Alerta marcada como leída: $alertaId")
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Error al marcar alerta como leída: ${e.message}", e)
+                }
+        }
+    }
 }

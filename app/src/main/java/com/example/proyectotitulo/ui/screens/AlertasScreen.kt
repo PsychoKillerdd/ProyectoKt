@@ -316,7 +316,7 @@ fun AlertaCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Button(
-                            onClick = { onContactarWhatsApp(alerta, 1) },
+                            onClick = { onContactarWhatsApp(1) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFF25D366)
@@ -333,7 +333,7 @@ fun AlertaCard(
                         }
                         
                         Button(
-                            onClick = { onContactarWhatsApp(alerta, 2) },
+                            onClick = { onContactarWhatsApp(2) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFF128C7E)
@@ -352,7 +352,7 @@ fun AlertaCard(
                 } else {
                     // Si solo hay 1 contacto, mostrar un solo botón
                     Button(
-                        onClick = { onContactarWhatsApp(alerta, if (hayContacto1) 1 else 2) },
+                        onClick = { onContactarWhatsApp(if (hayContacto1) 1 else 2) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF25D366)

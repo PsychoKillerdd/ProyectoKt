@@ -58,9 +58,11 @@ class AlertasComposeActivity : ComponentActivity() {
                             alertas = loadedAlertas
                         }
                     },
-                    onContactarEmergenciaWhatsApp = { alerta ->
-                        enviarWhatsAppEmergencia(alerta, contactosEmergencia)
-                    }
+                    onContactarEmergenciaWhatsApp = { alerta, contactoIndex ->
+                        enviarWhatsAppEmergencia(alerta, contactosEmergencia, contactoIndex)
+                    },
+                    hayContacto1 = contactosEmergencia.first.isNotBlank(),
+                    hayContacto2 = contactosEmergencia.second.isNotBlank()
                 )
             }
         }
@@ -184,21 +186,29 @@ class AlertasComposeActivity : ComponentActivity() {
     }
     
     
-    private fun enviarWhatsAppEmergencia(alerta: AlertaSalud, contactos: Pair<String, String>) {
+    private fun enviarWhatsAppEmergencia(alerta: AlertaSalud, contactos: Pair<String, String>, contactoIndex: Int) {
         val userId = firebaseAuth.currentUser?.uid
         if (userId == null) {
             Toast.makeText(this, "Error: Usuario no autenticado", Toast.LENGTH_SHORT).show()
             return
         }
         
-        // Determinar qué contacto usar (priorizar el primero)
-        val numeroDestino = when {
-            contactos.first.isNotBlank() -> contactos.first.replace("+", "").replace(" ", "")
-            contactos.second.isNotBlank() -> contactos.second.replace("+", "").replace(" ", "")
-            else -> {
-                Toast.makeText(this, "No hay contactos de emergencia registrados", Toast.LENGTH_LONG).show()
-                return
-            }
+        // Seleccionar el contacto según el índice
+        val numeroDestino = when (contactoIndex) {
+            1 -> contactos.first.takeIf { it.isNotBlank() }
+            2 -> contactos.second.takeIf { it.isNotBlank() }
+            else -> null
+        }
+        
+        if (numeroDestino == null) {
+            Toast.makeText(this, "Contacto de emergencia no disponible", Toast.LENGTH_LONG).show()
+            return
+        }
+        
+        val numeroLimpio = numeroDestino.replace("+", "").replace(" ", "")
+        if (numeroLimpio.isEmpty()) {
+            Toast.makeText(this, "No hay contactos de emergencia registrados", Toast.LENGTH_LONG).show()
+            return
         }
         
         // Cargar el nombre del usuario desde Firestore
@@ -208,12 +218,12 @@ class AlertasComposeActivity : ComponentActivity() {
             .addOnSuccessListener { document ->
                 val nombreUsuario = document.getString("name") ?: "Tu contacto"
                 val mensaje = construirMensajeAlerta(alerta, nombreUsuario)
-                enviarWhatsApp(numeroDestino, mensaje)
+                enviarWhatsApp(numeroLimpio, mensaje)
             }
             .addOnFailureListener { e ->
                 Log.e(TAG, "Error cargando nombre: ${e.message}", e)
                 val mensaje = construirMensajeAlerta(alerta, "Tu contacto")
-                enviarWhatsApp(numeroDestino, mensaje)
+                enviarWhatsApp(numeroLimpio, mensaje)
             }
     }
     

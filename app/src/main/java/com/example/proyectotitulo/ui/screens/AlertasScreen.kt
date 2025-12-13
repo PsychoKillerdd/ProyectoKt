@@ -28,7 +28,9 @@ fun AlertasScreen(
     isLoading: Boolean,
     onBackClick: () -> Unit,
     onMarcarAtendida: (String) -> Unit,
-    onContactarEmergenciaWhatsApp: (AlertaSalud) -> Unit
+    onContactarEmergenciaWhatsApp: (AlertaSalud, Int) -> Unit, // Int: 1 o 2 para indicar qué contacto
+    hayContacto1: Boolean,
+    hayContacto2: Boolean
 ) {
     Scaffold(
         topBar = {
@@ -107,7 +109,9 @@ fun AlertasScreen(
                             AlertaCard(
                                 alerta = alerta,
                                 onMarcarAtendida = { onMarcarAtendida(alerta.id) },
-                                onContactarWhatsApp = { onContactarEmergenciaWhatsApp(alerta) }
+                                onContactarWhatsApp = { contactoIndex -> onContactarEmergenciaWhatsApp(alerta, contactoIndex) },
+                                hayContacto1 = hayContacto1,
+                                hayContacto2 = hayContacto2
                             )
                         }
                     }
@@ -121,7 +125,9 @@ fun AlertasScreen(
 fun AlertaCard(
     alerta: AlertaSalud,
     onMarcarAtendida: () -> Unit,
-    onContactarWhatsApp: () -> Unit
+    onContactarWhatsApp: (Int) -> Unit, // Recibe el índice del contacto
+    hayContacto1: Boolean,
+    hayContacto2: Boolean
 ) {
     val backgroundColor = when (alerta.tipo.lowercase()) {
         "critica" -> Error.copy(alpha = 0.1f)
@@ -291,7 +297,7 @@ fun AlertaCard(
             }
             
             // Botones de Contacto de Emergencia (solo para alertas críticas)
-            if (alerta.tipo.lowercase() == "critica" && !alerta.atendida) {
+            if (alerta.tipo.lowercase() == "critica" && !alerta.atendida && (hayContacto1 || hayContacto2)) {
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Text(
@@ -303,20 +309,62 @@ fun AlertaCard(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                // Botón WhatsApp (Full Width)
-                Button(
-                    onClick = onContactarWhatsApp,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF25D366)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        "💬 Enviar WhatsApp",
-                        color = Color.White,
-                        fontWeight = FontWeight.Medium
-                    )
+                // Si hay 2 contactos, mostrar 2 botones
+                if (hayContacto1 && hayContacto2) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { onContactarWhatsApp(alerta, 1) },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF25D366)
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    "💬 Contacto 1",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                        
+                        Button(
+                            onClick = { onContactarWhatsApp(alerta, 2) },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF128C7E)
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    "💬 Contacto 2",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // Si solo hay 1 contacto, mostrar un solo botón
+                    Button(
+                        onClick = { onContactarWhatsApp(alerta, if (hayContacto1) 1 else 2) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF25D366)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            "💬 Enviar WhatsApp",
+                            color = Color.White,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
             

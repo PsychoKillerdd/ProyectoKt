@@ -241,4 +241,3 @@ class AlertasComposeActivity : ComponentActivity() {
         }
     }
 }
-}

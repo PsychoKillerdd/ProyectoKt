@@ -101,10 +101,10 @@ class AlertasForegroundService : Service() {
                                 Log.d(TAG, "🆕 Nueva alerta detectada: ${alerta.tipo} - ${alerta.titulo}")
                                 
                                 // Usar AlertasService para mostrar la notificación
-                                AlertasService.mostrarNotificacionPublica(applicationContext, alerta)
+                                AlertasService.mostrarNotificacionPublica(alerta)
                                 
                                 // Marcar como leída
-                                AlertasService.marcarAlertaComoLeidaStatic(firestore, userId, alerta.id)
+                                AlertasService.marcarAlertaComoLeidaPublica(userId, alerta.id)
                             } else {
                                 Log.d(TAG, "Alerta antigua ignorada: $diffMinutes minutos")
                             }
